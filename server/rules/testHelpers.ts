@@ -2,7 +2,9 @@ import { emptyUsage, type SessionMetrics, type Usage } from "../../shared/types.
 
 /** 全フィールドを 0 埋めした SessionMetrics に、テストが関心を持つ値だけ被せる */
 export function metricsFixture(
-  overrides: Partial<SessionMetrics> & { totals?: Partial<Usage> } = {},
+  overrides: Partial<Omit<SessionMetrics, "totals">> & {
+    totals?: Partial<Usage>;
+  } = {},
 ): SessionMetrics {
   const { totals, ...rest } = overrides;
   return {
@@ -14,7 +16,6 @@ export function metricsFixture(
     durationMs: 1_800_000,
     assistantTurns: 10,
     models: { "claude-sonnet-5": 10 },
-    totals: { ...emptyUsage(), ...totals },
     toolCalls: 0,
     toolErrors: 0,
     toolsByName: {},
@@ -33,5 +34,6 @@ export function metricsFixture(
     version: "2.1.243",
     parseErrors: 0,
     ...rest,
+    totals: { ...emptyUsage(), ...totals },
   };
 }
