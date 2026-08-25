@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# ローカル固有の Claude Code 設定
+.claude/settings.local.json
