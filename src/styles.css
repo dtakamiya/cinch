@@ -457,7 +457,15 @@ body {
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* 各カラムの下限 320px は cinch の最大幅から逆算した値。
+     .app( max-width 1120 ) − 横 padding 64 − gap 20×2 = 1016 を 3 分割すると
+     1 カラム ≈ 338px。下限 320px なら 3×320 + 40 = 1000 ≤ 1016 で 3 カラムが成立し、
+     ビューポート ~720px（コンテンツ幅 ~656px）では 2×320 + 20 = 660 > 656 となり
+     2 カラムに割れず 1 カラムへ落ちる。日本語見出し（「コンテキストの肥大」等）が
+     折り返さない幅も確保できる。 */
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  /* 内容量の少ないカテゴリのカードが縦に引き伸ばされて下部に空白が出るのを防ぐ */
+  align-items: start;
   gap: 20px;
   margin-top: 32px;
 }
@@ -477,18 +485,24 @@ body {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
+  /* 日本語カテゴリ名（「ベストプラクティス」等）を文中で不自然に折らない */
+  word-break: keep-all;
 }
 
 .category-card__head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .rule-points {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   font-size: 13px;
+  /* 「30.7 / 35」を右端で折り返さない・flex で縮めない */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .category-bar {
@@ -523,6 +537,12 @@ body {
   font-size: 13px;
   font-weight: 500;
   flex: 1;
+  /* flex: 1 で幅可変。min-width: 0 が無いと flex アイテムが縮まず溢れる */
+  min-width: 0;
+  /* 日本語ルール名（「キャッシュ効率」等）を単語・熟語の途中で折らない。
+     それでも 1 語がカラム幅を超える場合のみ任意位置で折る */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .rule-mark {
@@ -606,6 +626,8 @@ body {
   }
 
   .category-grid {
+    /* auto-fit でも 375px 幅なら 1 カラムになるが、下限 320px を割り込む
+       将来の padding 変更でも横スクロールが出ないよう明示的に 1 カラム固定 */
     grid-template-columns: 1fr;
     gap: 12px;
   }
