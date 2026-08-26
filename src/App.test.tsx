@@ -59,6 +59,9 @@ const detailResponse: SessionDetailResponse = {
     hasClaudeMd: true,
     gitBranch: "main",
     version: "2.1.243",
+    oversizedResults: 0,
+    largestResultBytes: 0,
+    largestResultTool: null,
     parseErrors: 0,
   },
   score: {

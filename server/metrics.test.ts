@@ -473,3 +473,64 @@ describe("computeMetrics — キャッシュ失効", () => {
     expect(m.cacheExpirations).toBe(1);
   });
 });
+
+describe("computeMetrics — 巨大なツール結果", () => {
+  it("largeResultBytes を超えた tool_result の件数と最大値・ツール名を集計する", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          tools: [
+            { id: "a", name: "Read" },
+            { id: "b", name: "Bash" },
+            { id: "c", name: "Grep" },
+          ],
+        }),
+        usr("2026-08-25T10:00:01.000Z", [
+          { id: "a", bytes: 20000 },
+          { id: "b", bytes: 13000 },
+          { id: "c", bytes: 500 },
+        ]),
+      ],
+    });
+    expect(m.oversizedResults).toBe(2);
+    expect(m.largestResultBytes).toBe(20000);
+    expect(m.largestResultTool).toBe("Read");
+  });
+
+  it("12000 ちょうどは巨大に数えない（境界は排他）", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", { tools: [{ id: "a", name: "Read" }] }),
+        usr("2026-08-25T10:00:01.000Z", [{ id: "a", bytes: 12000 }]),
+      ],
+    });
+    expect(m.oversizedResults).toBe(0);
+    expect(m.largestResultBytes).toBe(12000);
+    expect(m.largestResultTool).toBe("Read");
+  });
+
+  it("巨大な結果が無ければ 0 / 0 / null", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", { tools: [{ id: "a", name: "Read" }] }),
+        usr("2026-08-25T10:00:01.000Z", [{ id: "a", bytes: 100 }]),
+      ],
+    });
+    expect(m.oversizedResults).toBe(0);
+    expect(m.largestResultBytes).toBe(100);
+    expect(m.largestResultTool).toBe("Read");
+  });
+
+  it("tool_use を引き当てられない結果はカウントしない", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [usr("2026-08-25T10:00:01.000Z", [{ id: "ghost", bytes: 30000 }])],
+    });
+    expect(m.oversizedResults).toBe(0);
+    expect(m.largestResultBytes).toBe(0);
+    expect(m.largestResultTool).toBeNull();
+  });
+});

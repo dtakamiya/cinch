@@ -48,6 +48,9 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
 
   let toolCalls = 0;
   let toolErrors = 0;
+  let oversizedResults = 0;
+  let largestResultBytes = 0;
+  let largestResultTool: string | null = null;
   const toolsByName: Record<string, { calls: number; errors: number }> = {};
   /** tool_use_id → ツール名。tool_result はツール名を持たないので引き当てる。 */
   const toolNameById = new Map<string, string>();
@@ -97,6 +100,13 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
           toolErrors++;
           const entry = toolsByName[name];
           if (entry !== undefined) entry.errors++;
+        }
+        if (r.byteLength > THRESHOLDS.oversizedToolResults.largeResultBytes) {
+          oversizedResults++;
+        }
+        if (r.byteLength > largestResultBytes) {
+          largestResultBytes = r.byteLength;
+          largestResultTool = name;
         }
       }
       continue;
@@ -222,6 +232,9 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
     hasClaudeMd,
     gitBranch,
     version,
+    oversizedResults,
+    largestResultBytes,
+    largestResultTool,
     parseErrors,
   };
 }

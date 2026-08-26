@@ -42,6 +42,9 @@ function detail(
       hasClaudeMd: true,
       gitBranch: "main",
       version: "2.1.243",
+      oversizedResults: 0,
+      largestResultBytes: 0,
+      largestResultTool: null,
       parseErrors: 3,
     },
     score: {

@@ -80,6 +80,12 @@ export interface SessionMetrics {
   hasClaudeMd: boolean;
   gitBranch: string | null;
   version: string;
+  /** largeResultBytes を超えた tool_result の件数 */
+  oversizedResults: number;
+  /** 最大の tool_result バイト長（無ければ 0） */
+  largestResultBytes: number;
+  /** その最大結果を出したツール名（無ければ null） */
+  largestResultTool: string | null;
   parseErrors: number;
 }
 
