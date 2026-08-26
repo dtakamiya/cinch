@@ -11,13 +11,15 @@ export const WEIGHTS = {
   "model-fit": 10,
   // 生産性（35）
   "tool-error-rate": 12,
-  "redundant-file-reads": 8,
-  "parallel-tool-use": 8,
+  "redundant-file-reads": 6,
+  "parallel-tool-use": 6,
   "turn-efficiency": 7,
+  "oversized-tool-results": 4,
   // ベストプラクティス（30）
-  "subagent-delegation": 12,
+  "subagent-delegation": 10,
   "context-growth": 10,
-  "claude-md-present": 8,
+  "claude-md-present": 6,
+  "task-planning": 4,
 } as const satisfies Record<string, number>;
 
 export type RuleId = keyof typeof WEIGHTS;
@@ -107,5 +109,23 @@ export const THRESHOLDS = {
     zeroAbove: 20000,
     /** 計測に必要な最小ターン数（これ未満なら判定しない） */
     minTurns: 5,
+  },
+
+  oversizedToolResults: {
+    /** これを超える tool_result を「巨大」とみなす（バイト） */
+    largeResultBytes: 12000,
+    /** 巨大な結果がこれ以下なら満点 */
+    perfectAtMost: 0,
+    /** これ以上なら 0 点 */
+    zeroAtLeast: 6,
+    /** ツール呼び出しがこれ未満なら判定しない（満点扱い） */
+    minCalls: 10,
+  },
+
+  taskPlanning: {
+    /** assistant ターンがこれ未満なら判定しない（満点扱い） */
+    minTurns: 15,
+    /** ツール呼び出しがこれ未満なら判定しない（満点扱い） */
+    minCalls: 20,
   },
 } as const;
