@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { SessionSummary } from "../shared/types.js";
 import { buildTrend } from "./trend.js";
 import { formatDateTime, formatScore, scoreColor } from "./format.js";
+import { IconTrendDown, IconTrendUp } from "./icons.js";
 
 /**
  * 同一プロジェクトのスコア推移を SVG の折れ線で描く。
@@ -44,8 +45,9 @@ export function ScoreTrend({
     )
     .join(" ");
 
-  const last = points[points.length - 1];
-  const first = points[0];
+  // points.length >= 2 はチェック済みなので first / last は必ず存在する
+  const last = points[points.length - 1]!;
+  const first = points[0]!;
   const deltaLabel =
     delta > 0 ? `+${formatScore(delta)}` : formatScore(delta);
   const deltaClass =
@@ -57,11 +59,27 @@ export function ScoreTrend({
         <div>
           <span className="trend__title">{projectName} のスコア推移</span>
           <span className="trend__sub num">
-            {n} セッション ・ {formatDateTime(first?.startedAt ?? "")} 〜{" "}
-            {formatDateTime(last?.startedAt ?? "")}
+            {n} セッション ・ 初回 {formatScore(first.total)} → 最新{" "}
+            {formatScore(last.total)}
+          </span>
+          <span className="trend__range num">
+            {formatDateTime(first.startedAt)} 〜 {formatDateTime(last.startedAt)}
           </span>
         </div>
-        <span className={`trend__delta trend__delta--${deltaClass} num`}>
+        <span
+          className={`trend__delta trend__delta--${deltaClass} num`}
+          data-direction={deltaClass}
+        >
+          {deltaClass === "up" && (
+            <span className="trend__delta-icon" aria-label="上昇">
+              <IconTrendUp />
+            </span>
+          )}
+          {deltaClass === "down" && (
+            <span className="trend__delta-icon" aria-label="下降">
+              <IconTrendDown />
+            </span>
+          )}
           {deltaLabel} 点
         </span>
       </div>

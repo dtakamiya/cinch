@@ -152,6 +152,12 @@ describe("SessionList", () => {
     expect(screen.getByText("ツールエラー率")).toBeInTheDocument();
   });
 
+  it("主な減点タグに失点を −N 形式で併記する", () => {
+    render(<SessionList data={response([summary()])} />);
+    // summary() の topDeduction.lost は 9
+    expect(screen.getByText("−9")).toBeInTheDocument();
+  });
+
   it("最終スキャン時刻を表示する", () => {
     render(<SessionList data={response([summary()])} />);
     // response() の scannedAt は 2026-08-25T15:00:00Z

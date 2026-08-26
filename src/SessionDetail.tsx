@@ -9,9 +9,11 @@ import {
   formatScore,
   scoreColor,
 } from "./format.js";
+import { toNextActionView } from "./deduction.js";
 
 export function SessionDetail({ data }: { data: SessionDetailResponse }) {
   const { metrics, score } = data;
+  const nextAction = toNextActionView(score.gradable, score.rules);
   const models = Object.entries(metrics.models)
     .sort((a, b) => b[1] - a[1])
     .map(([name, turns]) => `${name}（${turns}）`)
@@ -53,6 +55,18 @@ export function SessionDetail({ data }: { data: SessionDetailResponse }) {
           </div>
         </div>
       </div>
+
+      {nextAction !== null && (
+        <section className="next-action" aria-label="最大の失点にもとづく次の改善">
+          <span className="next-action__kicker">次に効く改善</span>
+          <p className="next-action__title">
+            {nextAction.label}
+            <span className="num">（{nextAction.lostLabel} 点）</span>
+          </p>
+          <p className="next-action__meta">最大の失点</p>
+          <p className="next-action__body">{nextAction.body}</p>
+        </section>
+      )}
 
       {metrics.parseErrors > 0 && (
         <p className="notice">

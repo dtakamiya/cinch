@@ -10,12 +10,12 @@ import {
   IconMinus,
 } from "./icons.js";
 import {
-  RULE_LABELS,
   formatDateTime,
   formatDuration,
   formatScore,
   scoreColor,
 } from "./format.js";
+import { toDeductionView } from "./deduction.js";
 
 export interface Filters {
   project: string;
@@ -220,17 +220,23 @@ export function SessionList({ data }: { data: SessionsResponse }) {
               </span>
               <span className="session-card__right">
                 <span className="session-card__right-label">主な減点</span>
-                {s.topDeduction === null ? (
-                  <span className="deduction-tag">—</span>
-                ) : (
-                  <span className="deduction-tag">
-                    <span
-                      className="deduction-tag__dot"
-                      style={{ background: scoreColor(s.total) }}
-                    />
-                    {RULE_LABELS[s.topDeduction.id] ?? s.topDeduction.id}
-                  </span>
-                )}
+                {(() => {
+                  const dv = toDeductionView(s.topDeduction);
+                  return dv === null ? (
+                    <span className="deduction-tag">—</span>
+                  ) : (
+                    <span className="deduction-tag">
+                      <span
+                        className="deduction-tag__dot"
+                        style={{ background: scoreColor(s.total) }}
+                      />
+                      {dv.label}
+                      <span className="deduction-tag__lost num">
+                        {dv.lostLabel}
+                      </span>
+                    </span>
+                  );
+                })()}
                 <span className="chevron">
                   <IconChevronRight />
                 </span>

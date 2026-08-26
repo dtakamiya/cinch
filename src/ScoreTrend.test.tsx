@@ -72,6 +72,92 @@ describe("ScoreTrend", () => {
     expect(screen.getByText("-15 点")).toBeInTheDocument();
   });
 
+  it("head に「初回 X → 最新 Y」を表示する", () => {
+    render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 72 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 80 }),
+        ]}
+        projectName="cinch"
+      />,
+    );
+    expect(screen.getByText("2 セッション ・ 初回 72 → 最新 80")).toBeInTheDocument();
+  });
+
+  it("改善しているときは上昇アイコン（aria-label=上昇）を出す", () => {
+    render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 55 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 72 }),
+        ]}
+        projectName="cinch"
+      />,
+    );
+    expect(screen.getByLabelText("上昇")).toBeInTheDocument();
+    expect(screen.queryByLabelText("下降")).toBeNull();
+    // 既存のテキストノードは壊さない
+    expect(screen.getByText("+17 点")).toBeInTheDocument();
+  });
+
+  it("悪化しているときは下降アイコン（aria-label=下降）を出す", () => {
+    render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 80 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 65 }),
+        ]}
+        projectName="cinch"
+      />,
+    );
+    expect(screen.getByLabelText("下降")).toBeInTheDocument();
+    expect(screen.queryByLabelText("上昇")).toBeNull();
+    expect(screen.getByText("-15 点")).toBeInTheDocument();
+  });
+
+  it("僅か（+0.1）でも上昇なら上昇アイコンと + 付きラベルを出す", () => {
+    render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 70 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 70.1 }),
+        ]}
+        projectName="cinch"
+      />,
+    );
+    expect(screen.getByLabelText("上昇")).toBeInTheDocument();
+    expect(screen.getByText("+0.1 点")).toBeInTheDocument();
+  });
+
+  it("僅か（-0.1）でも悪化なら下降アイコンを出す", () => {
+    render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 70 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 69.9 }),
+        ]}
+        projectName="cinch"
+      />,
+    );
+    expect(screen.getByLabelText("下降")).toBeInTheDocument();
+    expect(screen.getByText("-0.1 点")).toBeInTheDocument();
+  });
+
+  it("変化なしのときは方向アイコンを出さない", () => {
+    render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 70 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 70 }),
+        ]}
+        projectName="cinch"
+      />,
+    );
+    expect(screen.queryByLabelText("上昇")).toBeNull();
+    expect(screen.queryByLabelText("下降")).toBeNull();
+  });
+
   it("採点対象外は推移に含めない（2 件未満扱いになる）", () => {
     const { container } = render(
       <ScoreTrend

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { SessionDetail } from "./SessionDetail.js";
 import type { SessionDetailResponse } from "../shared/types.js";
 
@@ -104,9 +104,11 @@ describe("SessionDetail", () => {
   });
 
   it("ルール名を日本語で表示する", () => {
-    render(<SessionDetail data={detail()} />);
-    expect(screen.getByText("ツールエラー率")).toBeInTheDocument();
-    expect(screen.getByText("冗長なファイル読み込み")).toBeInTheDocument();
+    const { container } = render(<SessionDetail data={detail()} />);
+    const grid = container.querySelector(".category-grid") as HTMLElement;
+    // 「ツールエラー率」は『次に効く改善』ブロックにも出るため、カテゴリ内で検証する
+    expect(within(grid).getByText("ツールエラー率")).toBeInTheDocument();
+    expect(within(grid).getByText("冗長なファイル読み込み")).toBeInTheDocument();
   });
 
   it("evidence を表示する", () => {
@@ -115,9 +117,11 @@ describe("SessionDetail", () => {
   });
 
   it("advice がある行だけ改善案を表示する", () => {
-    render(<SessionDetail data={detail()} />);
-    expect(screen.getByText(/Bash の引数を実行前に確認/)).toBeInTheDocument();
-    expect(screen.getAllByText(/^→/)).toHaveLength(2);
+    const { container } = render(<SessionDetail data={detail()} />);
+    const grid = container.querySelector(".category-grid") as HTMLElement;
+    // advice 文言は『次に効く改善』ブロックにも主文として出るため、カテゴリ内で検証する
+    expect(within(grid).getByText(/Bash の引数を実行前に確認/)).toBeInTheDocument();
+    expect(within(grid).getAllByText(/^→/)).toHaveLength(2);
   });
 
   it("満点のルールに ✓、減点のあるルールに ✗ アイコンを付ける", () => {
@@ -161,5 +165,68 @@ describe("SessionDetail", () => {
     render(<SessionDetail data={data} />);
     expect(screen.getAllByText(/採点対象外/).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("rule-label")).toBeNull();
+  });
+});
+
+describe("SessionDetail — 次に効く改善", () => {
+  it("gradable かつ失点ルールがあれば『次に効く改善』ブロックを出す", () => {
+    render(<SessionDetail data={detail()} />);
+    const block = screen.getByText("次に効く改善").closest(".next-action");
+    expect(block).not.toBeNull();
+    const scoped = within(block as HTMLElement);
+    // score.rules[0] は tool-error-rate（earned 2 / max 12）
+    expect(scoped.getByText("ツールエラー率")).toBeInTheDocument();
+    expect(scoped.getByText("（−10 点）")).toBeInTheDocument();
+    expect(scoped.getByText("最大の失点")).toBeInTheDocument();
+    // advice が主文になる
+    expect(
+      scoped.getByText("Bash の引数を実行前に確認してください。"),
+    ).toBeInTheDocument();
+  });
+
+  it("gradable: false なら『次に効く改善』を出さない", () => {
+    const data = detail({ gradable: false, total: 0, rules: [] });
+    render(<SessionDetail data={data} />);
+    expect(screen.queryByText("次に効く改善")).toBeNull();
+  });
+
+  it("先頭ルールが満点なら『次に効く改善』を出さない", () => {
+    const data = detail({
+      rules: [
+        {
+          id: "parallel-tool-use",
+          category: "productivity",
+          earned: 8,
+          max: 8,
+          evidence: "独立した呼び出しは並列化されています。",
+          advice: null,
+        },
+      ],
+    });
+    render(<SessionDetail data={data} />);
+    expect(screen.queryByText("次に効く改善")).toBeNull();
+  });
+
+  it("advice が null なら evidence が主文になる", () => {
+    const data = detail({
+      rules: [
+        {
+          id: "redundant-file-reads",
+          category: "productivity",
+          earned: 3,
+          max: 8,
+          evidence: "編集を挟まずに同じファイルを読み直した回数 5 回。",
+          advice: null,
+        },
+      ],
+    });
+    render(<SessionDetail data={data} />);
+    const block = screen.getByText("次に効く改善").closest(".next-action");
+    expect(block).not.toBeNull();
+    expect(
+      within(block as HTMLElement).getByText(
+        "編集を挟まずに同じファイルを読み直した回数 5 回。",
+      ),
+    ).toBeInTheDocument();
   });
 });
