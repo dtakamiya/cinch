@@ -174,6 +174,78 @@ describe("App", () => {
     );
   });
 
+  it("詳細 fetch の解決前に一覧へ戻っても『読み込み中…』が残らない", async () => {
+    // 詳細 fetch だけ手動で解決できるよう保留させる
+    let resolveDetail: (v: unknown) => void = () => {};
+    const detailPromise = new Promise((res) => {
+      resolveDetail = res;
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/sessions/")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => {
+              await detailPromise;
+              return detailResponse;
+            },
+          };
+        }
+        return { ok: true, status: 200, json: async () => listResponse };
+      }),
+    );
+
+    render(<App />);
+    // 一覧が出るまで待ってからカードを開く（list はキャッシュ済みにする）
+    await userEvent.click(await screen.findByRole("link", { name: /cinch/ }));
+    // 詳細 fetch 未解決なので「読み込み中…」が出る（詳細本文はまだ）
+    expect(await screen.findByText(/読み込み中/)).toBeInTheDocument();
+    expect(screen.queryByText(/47 回中 12 回が失敗/)).toBeNull();
+
+    // fetch 未解決のまま一覧へ戻る（ブラウザバック相当）
+    window.location.hash = "";
+    await waitFor(() => {
+      expect(screen.getByText("主な減点")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/読み込み中/)).toBeNull();
+
+    // 後から詳細 fetch が解決しても一覧のままで loading は戻らない
+    resolveDetail(detailResponse);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.getByText("主な減点")).toBeInTheDocument();
+    expect(screen.queryByText(/読み込み中/)).toBeNull();
+  });
+
+  it("404 詳細から一覧へ戻ると古いエラーバナーが消える（list キャッシュ済み）", async () => {
+    // list 取得は常に成功、詳細 fetch だけ 404 にする
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const isDetail = String(url).includes("/api/sessions/");
+        return {
+          ok: !isDetail,
+          status: isDetail ? 404 : 200,
+          json: async () =>
+            isDetail ? { error: "セッションが見つかりません" } : listResponse,
+        };
+      }),
+    );
+
+    render(<App />);
+    // 一覧をキャッシュしてから 404 になる詳細を開く
+    await userEvent.click(await screen.findByRole("link", { name: /cinch/ }));
+    await screen.findByText(/セッションが見つかりません/);
+
+    // list はキャッシュ済みなので back で loadList は走らない
+    await userEvent.click(screen.getByRole("link", { name: /一覧に戻る/ }));
+    await waitFor(() => {
+      expect(screen.getByText("主な減点")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/セッションが見つかりません/)).toBeNull();
+  });
+
   it("再スキャンボタンで一覧を取り直す", async () => {
     render(<App />);
     await screen.findByText("cinch");

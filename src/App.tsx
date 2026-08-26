@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionDetailResponse, SessionsResponse } from "../shared/types.js";
 import { fetchSessionDetail, fetchSessions } from "./api.js";
 import { IconLogo, IconRefresh } from "./icons.js";
@@ -16,6 +16,10 @@ export function App() {
   const [detail, setDetail] = useState<SessionDetailResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // 詳細 route から離れたことを検知するための直前 route 名。詳細 fetch が
+  // 残した loading / error（in-flight の中断や 404 バナー）を list に
+  // 持ち越さないよう、離脱時に後始末する。
+  const prevRouteName = useRef<Route["name"] | null>(null);
 
   // hash の変化に追従する（初回は hashchange が発火しないため初期値で state を持つ）
   useEffect(() => {
@@ -51,8 +55,18 @@ export function App() {
   useEffect(() => {
     if (route.name !== "detail") {
       setDetail(null);
+      // 詳細 route から離れたときだけ、詳細 fetch が残した loading / error
+      // （in-flight 中断で .finally が setLoading(false) を呼ばないケース、
+      // および 404 バナー）を片付ける。初回マウントの list 取得中に誤って
+      // loading を折らないよう、直前が detail だった場合に限定する。
+      if (prevRouteName.current === "detail") {
+        setLoading(false);
+        setError(null);
+      }
+      prevRouteName.current = route.name;
       return;
     }
+    prevRouteName.current = "detail";
     const sessionId = route.sessionId;
     let cancelled = false;
     setLoading(true);
