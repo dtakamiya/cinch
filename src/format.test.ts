@@ -46,6 +46,26 @@ describe("formatDuration", () => {
   it("0 なら 0秒", () => {
     expect(formatDuration(0)).toBe("0秒");
   });
+
+  // 境界値テスト（24時間クランプ対応）
+  it("24 時間未満（23 時間 59 分）はクランプされず", () => {
+    const ms23h59m = 24 * 60 * 60 * 1000 - 60_000;
+    expect(formatDuration(ms23h59m)).toBe("23時間59分");
+  });
+
+  it("ちょうど 24 時間は 24時間+ と表示", () => {
+    const ms24h = 24 * 60 * 60 * 1000;
+    expect(formatDuration(ms24h)).toBe("24時間+");
+  });
+
+  it("24 時間を超える（100 時間）は 24時間+ と表示", () => {
+    const ms100h = 100 * 60 * 60 * 1000;
+    expect(formatDuration(ms100h)).toBe("24時間+");
+  });
+
+  it("負値は 0秒 と表示", () => {
+    expect(formatDuration(-1000)).toBe("0秒");
+  });
 });
 
 describe("formatScore", () => {

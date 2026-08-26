@@ -1,5 +1,8 @@
 import type { Category } from "../shared/types.js";
 
+/** 表示層での所要時間クランプ閾値（24時間） */
+const DURATION_CLAMP_MS = 24 * 60 * 60 * 1000;
+
 export function formatDateTime(iso: string): string {
   if (iso === "") return "—";
   const d = new Date(iso);
@@ -12,6 +15,12 @@ export function formatDateTime(iso: string): string {
 }
 
 export function formatDuration(ms: number): string {
+  // 負値をガードして 0秒 と表示
+  if (ms < 0) return "0秒";
+
+  // 24時間以上はクランプして表示
+  if (ms >= DURATION_CLAMP_MS) return "24時間+";
+
   const totalMinutes = Math.floor(ms / 60_000);
   if (totalMinutes < 1) return `${Math.floor(ms / 1000)}秒`;
   if (totalMinutes < 60) return `${totalMinutes}分`;
