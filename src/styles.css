@@ -224,6 +224,12 @@ body {
   color: var(--faint);
 }
 
+.filter-bar__scanned {
+  font-size: 12px;
+  color: var(--faint);
+  padding-left: 12px;
+}
+
 /* ---------- 通知・エラー ---------- */
 
 .summary-line {
@@ -618,7 +624,8 @@ body {
     padding-bottom: 4px;
   }
 
-  .filter-bar__count {
+  .filter-bar__count,
+  .filter-bar__scanned {
     display: none;
   }
 

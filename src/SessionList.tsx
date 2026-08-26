@@ -162,6 +162,11 @@ export function SessionList({ data }: { data: SessionsResponse }) {
           採点対象外を表示
         </label>
         <span className="filter-bar__count num">{rows.length} セッション</span>
+        {data.scannedAt !== "" && (
+          <span className="filter-bar__scanned num">
+            最終スキャン {formatDateTime(data.scannedAt)}
+          </span>
+        )}
       </div>
 
       {data.message !== undefined && <p className="notice">{data.message}</p>}

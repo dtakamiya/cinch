@@ -152,6 +152,19 @@ describe("SessionList", () => {
     expect(screen.getByText("ツールエラー率")).toBeInTheDocument();
   });
 
+  it("最終スキャン時刻を表示する", () => {
+    render(<SessionList data={response([summary()])} />);
+    // response() の scannedAt は 2026-08-25T15:00:00Z
+    expect(screen.getByText(/最終スキャン/)).toBeInTheDocument();
+  });
+
+  it("scannedAt が空文字なら最終スキャン表示を出さない", () => {
+    render(
+      <SessionList data={{ ...response([summary()]), scannedAt: "" }} />,
+    );
+    expect(screen.queryByText(/最終スキャン/)).not.toBeInTheDocument();
+  });
+
   it("減点が無いセッションは — を表示する", () => {
     render(
       <SessionList
