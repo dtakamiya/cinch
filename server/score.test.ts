@@ -160,6 +160,68 @@ describe("computeScore — 実ルールでの整合性", () => {
   });
 });
 
+describe("computeScore — 丸めの境界", () => {
+  it("earned は個別に小数第 1 位へ丸める（0.05 は切り上げ方向）", () => {
+    // weight 1 × score 0.05 = 0.05 → round1 で 0.1
+    const rules = [fakeRule("a", "cost", 1, 0.05)];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+    expect(s.rules[0]?.earned).toBe(0.1);
+  });
+
+  it("0.05 未満は 0 に丸める", () => {
+    // weight 1 × score 0.04 = 0.04 → round1 で 0
+    const rules = [fakeRule("a", "cost", 1, 0.04)];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+    expect(s.rules[0]?.earned).toBe(0);
+  });
+
+  it("individual earned を丸めてから合算する（丸め誤差が total に乗りうることの明示）", () => {
+    // 各 0.04 は earned 0 に丸められるので total も 0。
+    // 丸めずに合算していれば 0.12 になるはずの入力。
+    const rules = [
+      fakeRule("a", "cost", 1, 0.04),
+      fakeRule("b", "productivity", 1, 0.04),
+      fakeRule("c", "practice", 1, 0.04),
+    ];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+    expect(s.total).toBe(0);
+    expect(s.categories.cost.earned).toBe(0);
+  });
+
+  it("カテゴリ earned も逐次丸めるが total と一致する", () => {
+    const rules = [
+      fakeRule("a", "cost", 3, 0.5), // 1.5
+      fakeRule("b", "cost", 3, 0.5), // 1.5
+      fakeRule("c", "productivity", 7, 0.5), // 3.5
+    ];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+    expect(s.categories.cost.earned).toBe(3);
+    expect(s.categories.productivity.earned).toBe(3.5);
+    expect(s.total).toBe(6.5);
+  });
+});
+
+describe("computeScore — ソートの安定性", () => {
+  it("減点が同幅のルールは入力順を保つ", () => {
+    const rules = [
+      fakeRule("first", "cost", 10, 0.5), // 減点 5
+      fakeRule("second", "productivity", 10, 0.5), // 減点 5
+      fakeRule("third", "practice", 10, 0.5), // 減点 5
+    ];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+    expect(s.rules.map((r) => r.id)).toEqual(["first", "second", "third"]);
+  });
+
+  it("満点ルールは減点ありルールより後ろに並ぶ", () => {
+    const rules = [
+      fakeRule("perfect", "cost", 10, 1), // 減点 0
+      fakeRule("deducted", "productivity", 5, 0.5), // 減点 2.5
+    ];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+    expect(s.rules.map((r) => r.id)).toEqual(["deducted", "perfect"]);
+  });
+});
+
 describe("topDeduction", () => {
   it("最も減点の大きいルール ID と減点幅を返す", () => {
     const rules = [
@@ -178,6 +240,23 @@ describe("topDeduction", () => {
 
   it("gradable: false なら null を返す", () => {
     const s = computeScore(metricsFixture({ assistantTurns: 1 }));
+    expect(topDeduction(s)).toBeNull();
+  });
+
+  it("減点幅が同じなら、並び順で先に来るルールを返す", () => {
+    const rules = [
+      fakeRule("a", "cost", 10, 0.5), // 減点 5
+      fakeRule("b", "productivity", 10, 0.5), // 減点 5（同幅）
+    ];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+    // ソート後も同幅なら入力順が保たれ、先頭が選ばれる
+    expect(topDeduction(s)).toEqual({ id: "a", lost: 5 });
+  });
+
+  it("丸めで earned が max と同値になり lost が 0 以下なら null を返す", () => {
+    // 1 × 0.96 = 0.96 → round1 で earned 1.0 → lost = 1.0 - 1.0 = 0
+    const rules = [fakeRule("a", "cost", 1, 0.96)];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
     expect(topDeduction(s)).toBeNull();
   });
 });
