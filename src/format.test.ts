@@ -66,6 +66,18 @@ describe("formatDuration", () => {
   it("負値は 0秒 と表示", () => {
     expect(formatDuration(-1000)).toBe("0秒");
   });
+
+  it("NaN は — と表示", () => {
+    expect(formatDuration(NaN)).toBe("—");
+  });
+
+  it("正の無限大は — と表示", () => {
+    expect(formatDuration(Number.POSITIVE_INFINITY)).toBe("—");
+  });
+
+  it("負の無限大は — と表示", () => {
+    expect(formatDuration(Number.NEGATIVE_INFINITY)).toBe("—");
+  });
 });
 
 describe("formatScore", () => {
