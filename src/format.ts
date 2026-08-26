@@ -15,6 +15,9 @@ export function formatDateTime(iso: string): string {
 }
 
 export function formatDuration(ms: number): string {
+  // 非有限値（NaN / ±Infinity）は — と表示（formatDateTime に合わせる）
+  if (!Number.isFinite(ms)) return "—";
+
   // 負値をガードして 0秒 と表示
   if (ms < 0) return "0秒";
 
