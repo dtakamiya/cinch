@@ -1,0 +1,158 @@
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { SessionList, filterAndSort } from "./SessionList.js";
+import type { SessionSummary, SessionsResponse } from "../shared/types.js";
+
+function summary(overrides: Partial<SessionSummary> = {}): SessionSummary {
+  return {
+    sessionId: "s1",
+    projectName: "cinch",
+    cwd: "/Users/x/work/cinch",
+    startedAt: "2026-08-25T14:03:00.000Z",
+    durationMs: 1_800_000,
+    assistantTurns: 38,
+    total: 71,
+    gradable: true,
+    categories: {
+      cost: { earned: 25, max: 35 },
+      productivity: { earned: 26, max: 35 },
+      practice: { earned: 20, max: 30 },
+    },
+    topDeduction: { id: "tool-error-rate", lost: 9 },
+    ...overrides,
+  };
+}
+
+function response(sessions: SessionSummary[]): SessionsResponse {
+  return {
+    sessions,
+    scannedAt: "2026-08-25T15:00:00.000Z",
+    projectCount: 1,
+    skipped: [],
+  };
+}
+
+describe("filterAndSort", () => {
+  const sessions = [
+    summary({ sessionId: "a", projectName: "cinch", total: 42, startedAt: "2026-08-24T00:00:00.000Z" }),
+    summary({ sessionId: "b", projectName: "other", total: 89, startedAt: "2026-08-22T00:00:00.000Z" }),
+    summary({ sessionId: "c", projectName: "cinch", total: 71, startedAt: "2026-08-23T00:00:00.000Z" }),
+  ];
+
+  it("スコアの高い順に並べる", () => {
+    const out = filterAndSort(sessions, { project: "", period: "all", sortBy: "score" });
+    expect(out.map((s) => s.sessionId)).toEqual(["b", "c", "a"]);
+  });
+
+  it("日付の新しい順に並べる", () => {
+    const out = filterAndSort(sessions, { project: "", period: "all", sortBy: "date" });
+    expect(out.map((s) => s.sessionId)).toEqual(["a", "c", "b"]);
+  });
+
+  it("プロジェクトで絞り込む", () => {
+    const out = filterAndSort(sessions, { project: "cinch", period: "all", sortBy: "score" });
+    expect(out.map((s) => s.sessionId)).toEqual(["c", "a"]);
+  });
+
+  it("採点対象外のセッションを末尾に置く", () => {
+    const withUngraded = [
+      ...sessions,
+      summary({ sessionId: "d", total: 0, gradable: false, topDeduction: null }),
+    ];
+    const out = filterAndSort(withUngraded, { project: "", period: "all", sortBy: "score" });
+    expect(out[out.length - 1]?.sessionId).toBe("d");
+  });
+
+  it("期間フィルタで範囲外を除く", () => {
+    const now = new Date("2026-08-25T00:00:00.000Z");
+    vi.setSystemTime(now);
+    const out = filterAndSort(sessions, { project: "", period: "7d", sortBy: "score" });
+    expect(out).toHaveLength(3);
+
+    const narrow = filterAndSort(sessions, { project: "", period: "1d", sortBy: "score" });
+    expect(narrow.map((s) => s.sessionId)).toEqual(["a"]);
+    vi.useRealTimers();
+  });
+
+  it("元の配列を変更しない", () => {
+    const original = [...sessions];
+    filterAndSort(sessions, { project: "", period: "all", sortBy: "score" });
+    expect(sessions).toEqual(original);
+  });
+});
+
+describe("SessionList", () => {
+  it("セッションを行として表示する", () => {
+    render(<SessionList data={response([summary()])} onSelect={() => {}} />);
+    expect(screen.getByRole("button", { name: "cinch" })).toBeInTheDocument();
+    expect(screen.getByText("71")).toBeInTheDocument();
+    expect(screen.getByText("38")).toBeInTheDocument();
+  });
+
+  it("主な減点をルールの日本語名で表示する", () => {
+    render(<SessionList data={response([summary()])} onSelect={() => {}} />);
+    expect(screen.getByText("ツールエラー率")).toBeInTheDocument();
+  });
+
+  it("減点が無いセッションは — を表示する", () => {
+    render(
+      <SessionList
+        data={response([summary({ total: 100, topDeduction: null })])}
+        onSelect={() => {}}
+      />,
+    );
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("平均点と採点済み件数を表示する", () => {
+    render(
+      <SessionList
+        data={response([
+          summary({ sessionId: "a", total: 60 }),
+          summary({ sessionId: "b", total: 80 }),
+          summary({ sessionId: "c", gradable: false, total: 0 }),
+        ])}
+        onSelect={() => {}}
+      />,
+    );
+    expect(screen.getByText(/平均 70/)).toBeInTheDocument();
+    expect(screen.getByText(/採点済 2件 \/ 全3件/)).toBeInTheDocument();
+  });
+
+  it("行をクリックすると onSelect が sessionId 付きで呼ばれる", async () => {
+    const onSelect = vi.fn();
+    render(<SessionList data={response([summary({ sessionId: "abc" })])} onSelect={onSelect} />);
+
+    await userEvent.click(screen.getByRole("button", { name: /cinch/ }));
+    expect(onSelect).toHaveBeenCalledWith("abc");
+  });
+
+  it("採点対象外のセッションはスコアの代わりに — を出す", () => {
+    render(
+      <SessionList
+        data={response([summary({ gradable: false, total: 0, topDeduction: null })])}
+        onSelect={() => {}}
+      />,
+    );
+    expect(screen.getByText("採点対象外")).toBeInTheDocument();
+  });
+
+  it("skipped があれば件数を表示する", () => {
+    const data = response([summary()]);
+    data.skipped = [
+      { path: "/a.jsonl", reason: "ファイルが空です" },
+      { path: "/b.jsonl", reason: "読めません" },
+    ];
+    render(<SessionList data={data} onSelect={() => {}} />);
+    expect(screen.getByText(/2 件のファイルを読み飛ばしました/)).toBeInTheDocument();
+  });
+
+  it("message があれば表示する（ログが 1 件も無い場合）", () => {
+    const data = response([]);
+    data.message = "セッションログのディレクトリが見つかりません。";
+    render(<SessionList data={data} onSelect={() => {}} />);
+    expect(screen.getByText(/見つかりません/)).toBeInTheDocument();
+  });
+});

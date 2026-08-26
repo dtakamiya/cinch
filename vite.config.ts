@@ -16,6 +16,6 @@ export default defineConfig({
     // ディレクティブを先頭に書いて環境を指定する。
     environment: "node",
     globals: true,
-    setupFiles: [],
+    setupFiles: ["./src/setupTests.ts"],
   },
 });
