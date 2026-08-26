@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import { SessionList, filterAndSort } from "./SessionList.js";
+import { SessionList, filterAndSort, summarize } from "./SessionList.js";
 import type { SessionSummary, SessionsResponse } from "../shared/types.js";
 
 function summary(overrides: Partial<SessionSummary> = {}): SessionSummary {
@@ -79,6 +79,38 @@ describe("filterAndSort", () => {
     const original = [...sessions];
     filterAndSort(sessions, { project: "", period: "all", sortBy: "score" });
     expect(sessions).toEqual(original);
+  });
+});
+
+describe("summarize", () => {
+  it("空配列は NaN を出さず avg:0 を返す", () => {
+    expect(summarize([])).toEqual({ avg: 0, graded: 0, total: 0 });
+  });
+
+  it("gradable のみ複数なら平均を計算する", () => {
+    const out = summarize([
+      summary({ sessionId: "a", total: 60 }),
+      summary({ sessionId: "b", total: 80 }),
+      summary({ sessionId: "c", total: 100 }),
+    ]);
+    expect(out).toEqual({ avg: 80, graded: 3, total: 3 });
+  });
+
+  it("gradable と ungraded が混在しても gradable だけで平均を出す", () => {
+    const out = summarize([
+      summary({ sessionId: "a", total: 60 }),
+      summary({ sessionId: "b", total: 80 }),
+      summary({ sessionId: "c", gradable: false, total: 0 }),
+    ]);
+    expect(out).toEqual({ avg: 70, graded: 2, total: 3 });
+  });
+
+  it("ungraded のみなら avg:0 graded:0 total:N", () => {
+    const out = summarize([
+      summary({ sessionId: "a", gradable: false, total: 0 }),
+      summary({ sessionId: "b", gradable: false, total: 0 }),
+    ]);
+    expect(out).toEqual({ avg: 0, graded: 0, total: 2 });
   });
 });
 

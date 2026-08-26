@@ -54,6 +54,20 @@ export function filterAndSort(
   });
 }
 
+/** サマリー集計を純粋関数として切り出す（フィルタ後の行に追従させ、UI を介さずテストできるように） */
+export function summarize(rows: SessionSummary[]): {
+  avg: number;
+  graded: number;
+  total: number;
+} {
+  const gradable = rows.filter((s) => s.gradable);
+  const avg =
+    gradable.length === 0
+      ? 0
+      : gradable.reduce((sum, s) => sum + s.total, 0) / gradable.length;
+  return { avg, graded: gradable.length, total: rows.length };
+}
+
 export function SessionList({ data }: { data: SessionsResponse }) {
   const [filters, setFilters] = useState<Filters>({
     project: "",
@@ -74,11 +88,7 @@ export function SessionList({ data }: { data: SessionsResponse }) {
     [data.sessions, filters],
   );
 
-  const graded = data.sessions.filter((s) => s.gradable);
-  const average =
-    graded.length === 0
-      ? 0
-      : graded.reduce((sum, s) => sum + s.total, 0) / graded.length;
+  const { avg, graded, total } = summarize(rows);
 
   return (
     <div className="list">
@@ -86,15 +96,15 @@ export function SessionList({ data }: { data: SessionsResponse }) {
         <div className="stat-card">
           <span className="stat-card__label">平均スコア</span>
           <span className="stat-card__value num">
-            <strong>{formatScore(Math.round(average * 10) / 10)}</strong>
+            <strong>{formatScore(Math.round(avg * 10) / 10)}</strong>
             <span>点 / 100</span>
           </span>
         </div>
         <div className="stat-card">
           <span className="stat-card__label">採点済</span>
           <span className="stat-card__value num">
-            <strong>{graded.length}</strong>
-            <span>件 / 全{data.sessions.length}件</span>
+            <strong>{graded}</strong>
+            <span>件 / 全{total}件</span>
           </span>
         </div>
       </div>
