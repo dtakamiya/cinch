@@ -68,7 +68,10 @@ export function SessionList({
   });
 
   const projects = useMemo(
-    () => [...new Set(data.sessions.map((s) => s.projectName))].sort(),
+    () =>
+      [...new Set(data.sessions.map((s) => s.projectName))].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" }),
+      ),
     [data.sessions],
   );
 

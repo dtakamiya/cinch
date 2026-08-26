@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   defaultRoot,
+  deriveProjectName,
   discoverSessions,
   hasClaudeMd,
   unescapeProjectDir,
@@ -26,6 +27,57 @@ describe("unescapeProjectDir", () => {
 
   it("先頭が - でない名前はそのまま返す", () => {
     expect(unescapeProjectDir("plain")).toBe("plain");
+  });
+});
+
+describe("deriveProjectName", () => {
+  it("通常の cwd は最終セグメントを返す", () => {
+    expect(deriveProjectName("/Users/x/work/cinch")).toBe("cinch");
+  });
+
+  it("末尾スラッシュがあっても最終セグメントを返す", () => {
+    expect(deriveProjectName("/Users/x/work/cinch/")).toBe("cinch");
+  });
+
+  it("ハッシュに見えない最終セグメント（cost/dashboad）はそのまま", () => {
+    expect(deriveProjectName("/Users/x/work/cc/cost/dashboad")).toBe("dashboad");
+  });
+
+  it("~/.claude 直下のセッションは ~/.claude と表示する", () => {
+    expect(deriveProjectName("/Users/x/.claude")).toBe("~/.claude");
+  });
+
+  it("末尾スラッシュ付きの .claude も ~/.claude", () => {
+    expect(deriveProjectName("/Users/x/.claude/")).toBe("~/.claude");
+  });
+
+  it("Claude Code の worktree サフィックス（-<6桁hex>）を剥がす", () => {
+    expect(
+      deriveProjectName(
+        "/Users/x/work/claudecode-harness-patterns/.claude/worktrees/analyze-claude-cookbooks-f438b8",
+      ),
+    ).toBe("analyze-claude-cookbooks");
+  });
+
+  it("最終セグメントが hex そのものなら親ディレクトリ名にフォールバック", () => {
+    expect(deriveProjectName("/Users/x/work/worktrees/f438b8")).toBe("worktrees");
+  });
+
+  it("hex に見えても 6〜8桁でなければ剥がさない", () => {
+    expect(deriveProjectName("/Users/x/work/fix-abc")).toBe("fix-abc");
+    expect(deriveProjectName("/Users/x/work/fix-abcdef01234")).toBe(
+      "fix-abcdef01234",
+    );
+  });
+
+  it("大文字混じりの 16 進もどきは剥がさない（Claude Code は小文字）", () => {
+    expect(deriveProjectName("/Users/x/work/feature-ABC123")).toBe(
+      "feature-ABC123",
+    );
+  });
+
+  it("空文字は basename('') と同じく空文字を返す（metrics では resolvedCwd が空にならない）", () => {
+    expect(deriveProjectName("")).toBe("");
   });
 });
 

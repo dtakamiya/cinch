@@ -1,7 +1,7 @@
 import { readdir, stat, access } from "node:fs/promises";
 import { constants } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { SkippedFile } from "../shared/types.js";
 
 export interface DiscoveredFile {
@@ -34,6 +34,36 @@ export function defaultRoot(): string {
 export function unescapeProjectDir(name: string): string {
   if (!name.startsWith("-")) return name;
   return name.replace(/-/g, "/");
+}
+
+/** Claude Code が git worktree の cwd 重複時に付ける "-<6〜8桁hex>" サフィックス。 */
+const WORKTREE_SUFFIX = /-[0-9a-f]{6,8}$/;
+/** サフィックスを剥がした残りが hex そのもの（＝名前部分が無い）ケースの検出用。 */
+const BARE_HEX = /^[0-9a-f]{6,8}$/;
+
+/**
+ * cwd から一覧表示用のプロジェクト名を導出する（fs に触らない純粋関数）。
+ *
+ * - `~/.claude` 直下（グローバル設定をいじったセッション）は "~/.claude" と表示する。
+ * - 最終セグメントから Claude Code が付ける worktree サフィックス（"-<6〜8桁hex>"）を剥がす。
+ * - 剥がした結果が空、または hex そのものなら親ディレクトリ名にフォールバックする。
+ * - それ以外は `basename` と同じ（`cost/dashboad` → `dashboad`）。
+ */
+export function deriveProjectName(cwd: string): string {
+  const trimmed = cwd.replace(/\/+$/, "");
+  if (trimmed.endsWith("/.claude") || trimmed === ".claude") return "~/.claude";
+
+  const base = basename(trimmed);
+  const parentOf = () => {
+    const parent = basename(trimmed.slice(0, trimmed.length - base.length).replace(/\/+$/, ""));
+    return parent !== "" ? parent : base;
+  };
+
+  if (BARE_HEX.test(base)) return parentOf();
+  if (!WORKTREE_SUFFIX.test(base)) return base;
+
+  const stripped = base.replace(WORKTREE_SUFFIX, "");
+  return stripped !== "" ? stripped : parentOf();
 }
 
 /**

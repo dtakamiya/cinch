@@ -1,4 +1,4 @@
-import { basename } from "node:path";
+import { deriveProjectName } from "./discover.js";
 import {
   emptyUsage,
   type Event,
@@ -262,7 +262,7 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
   return {
     sessionId,
     cwd: resolvedCwd,
-    projectName: basename(resolvedCwd),
+    projectName: deriveProjectName(resolvedCwd),
     startedAt,
     endedAt,
     durationMs,
