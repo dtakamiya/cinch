@@ -182,7 +182,7 @@ describe("GET /api/sessions/:sessionId", () => {
     await writeSession("s1", sessionLines(projectCwd, 5));
     const res = await request(createApp({ root })).get("/api/sessions/s1");
 
-    expect(res.body.score.rules).toHaveLength(12);
+    expect(res.body.score.rules).toHaveLength(15);
     for (const rule of res.body.score.rules) {
       expect(typeof rule.id).toBe("string");
       expect(typeof rule.evidence).toBe("string");

@@ -7,26 +7,29 @@ describe("WEIGHTS", () => {
     expect(total).toBe(100);
   });
 
-  it("12 ルール分の配点を持つ", () => {
-    expect(Object.keys(WEIGHTS)).toHaveLength(12);
+  it("15 ルール分の配点を持つ", () => {
+    expect(Object.keys(WEIGHTS)).toHaveLength(15);
   });
 
   it("カテゴリごとの小計が 35 / 35 / 30 である", () => {
     const cost =
       WEIGHTS["cache-efficiency"] +
       WEIGHTS["cache-ttl-waste"] +
-      WEIGHTS["model-fit"];
+      WEIGHTS["model-fit"] +
+      WEIGHTS["context-window-headroom"];
     const productivity =
       WEIGHTS["tool-error-rate"] +
       WEIGHTS["redundant-file-reads"] +
       WEIGHTS["parallel-tool-use"] +
       WEIGHTS["turn-efficiency"] +
-      WEIGHTS["oversized-tool-results"];
+      WEIGHTS["oversized-tool-results"] +
+      WEIGHTS["bash-over-native-tools"];
     const practice =
       WEIGHTS["subagent-delegation"] +
       WEIGHTS["context-growth"] +
       WEIGHTS["claude-md-present"] +
-      WEIGHTS["task-planning"];
+      WEIGHTS["task-planning"] +
+      WEIGHTS["verification-gap"];
     expect([cost, productivity, practice]).toEqual([35, 35, 30]);
   });
 });

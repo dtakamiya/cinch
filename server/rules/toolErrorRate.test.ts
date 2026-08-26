@@ -6,7 +6,7 @@ describe("tool-error-rate", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(toolErrorRateRule.id).toBe("tool-error-rate");
     expect(toolErrorRateRule.category).toBe("productivity");
-    expect(toolErrorRateRule.weight).toBe(12);
+    expect(toolErrorRateRule.weight).toBe(9);
   });
 
   it("ツール呼び出しが閾値未満（4 回）なら判定せず満点", () => {

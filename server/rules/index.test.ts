@@ -4,8 +4,8 @@ import { WEIGHTS } from "../config/thresholds.js";
 import { metricsFixture } from "./testHelpers.js";
 
 describe("ALL_RULES", () => {
-  it("12 件のルールを登録している", () => {
-    expect(ALL_RULES).toHaveLength(12);
+  it("15 件のルールを登録している", () => {
+    expect(ALL_RULES).toHaveLength(15);
   });
 
   it("ID が重複しない", () => {

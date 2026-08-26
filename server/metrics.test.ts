@@ -534,3 +534,123 @@ describe("computeMetrics — 巨大なツール結果", () => {
     expect(m.largestResultTool).toBeNull();
   });
 });
+
+describe("computeMetrics — 変更と検証", () => {
+  it("Edit / Write / NotebookEdit を編集として数える", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          tools: [
+            { id: "t1", name: "Edit", input: { file_path: "/a.ts" } },
+            { id: "t2", name: "Write", input: { file_path: "/b.ts" } },
+            { id: "t3", name: "NotebookEdit", input: {} },
+            { id: "t4", name: "Read", input: { file_path: "/c.ts" } },
+          ],
+        }),
+      ],
+    });
+    expect(m.editCalls).toBe(3);
+  });
+
+  it("テストやビルドの Bash を検証として数える", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          tools: [
+            { id: "t1", name: "Bash", input: { command: "npm test" } },
+            { id: "t2", name: "Bash", input: { command: "npx tsc --noEmit" } },
+            { id: "t3", name: "Bash", input: { command: "git status" } },
+          ],
+        }),
+      ],
+    });
+    expect(m.verificationCalls).toBe(2);
+  });
+
+  it("パイプの途中にある検証コマンドも数える", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          tools: [
+            { id: "t1", name: "Bash", input: { command: "npm test 2>&1 | tail -20" } },
+          ],
+        }),
+      ],
+    });
+    expect(m.verificationCalls).toBe(1);
+  });
+});
+
+describe("computeMetrics — 専用ツールで代替できる Bash", () => {
+  it("先頭語が cat / ls / grep なら数え、内訳を持つ", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          tools: [
+            { id: "t1", name: "Bash", input: { command: "cat package.json" } },
+            { id: "t2", name: "Bash", input: { command: "ls -la src" } },
+            { id: "t3", name: "Bash", input: { command: "cat README.md" } },
+            { id: "t4", name: "Bash", input: { command: "git status" } },
+          ],
+        }),
+      ],
+    });
+    expect(m.bashInsteadOfTool).toBe(3);
+    expect(m.bashInsteadOfToolByCommand).toEqual({ cat: 2, ls: 1 });
+  });
+
+  it("パイプの途中の grep は数えない（先頭語だけを見る）", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          tools: [
+            { id: "t1", name: "Bash", input: { command: "npm test | grep FAIL" } },
+          ],
+        }),
+      ],
+    });
+    expect(m.bashInsteadOfTool).toBe(0);
+  });
+
+  it("Bash 以外のツールは数えない", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          tools: [{ id: "t1", name: "Grep", input: { pattern: "cat" } }],
+        }),
+      ],
+    });
+    expect(m.bashInsteadOfTool).toBe(0);
+  });
+});
+
+describe("computeMetrics — コンテキストの最大値", () => {
+  it("input + cacheRead + cacheCreate の最大を持つ", () => {
+    const m = computeMetrics({
+      ...base,
+      events: [
+        asst("2026-08-25T10:00:00.000Z", {
+          usage: { input: 100, cacheRead: 50_000, cacheCreate: 1_000 },
+        }),
+        asst("2026-08-25T10:01:00.000Z", {
+          usage: { input: 200, cacheRead: 120_000, cacheCreate: 2_000 },
+        }),
+        asst("2026-08-25T10:02:00.000Z", {
+          usage: { input: 100, cacheRead: 30_000, cacheCreate: 0 },
+        }),
+      ],
+    });
+    expect(m.peakContextTokens).toBe(122_200);
+  });
+
+  it("assistant ターンが無ければ 0", () => {
+    const m = computeMetrics({ ...base, events: [meta("/Users/x/work/cinch")] });
+    expect(m.peakContextTokens).toBe(0);
+  });
+});

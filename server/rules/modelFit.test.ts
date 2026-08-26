@@ -6,7 +6,7 @@ describe("model-fit", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(modelFitRule.id).toBe("model-fit");
     expect(modelFitRule.category).toBe("cost");
-    expect(modelFitRule.weight).toBe(10);
+    expect(modelFitRule.weight).toBe(8);
   });
 
   it("単純作業のターンが 0 なら判定せず満点", () => {

@@ -30,6 +30,27 @@ function filePathOf(tool: ToolUse): string | null {
   return typeof p === "string" && p.length > 0 ? p : null;
 }
 
+/** Bash の command 文字列。Bash 以外や取れない場合は null。 */
+function bashCommandOf(tool: ToolUse): string | null {
+  if (tool.name !== "Bash") return null;
+  const input = tool.input;
+  if (typeof input !== "object" || input === null) return null;
+  const c = (input as Record<string, unknown>)["command"];
+  return typeof c === "string" && c.length > 0 ? c : null;
+}
+
+/**
+ * コマンド列の先頭語を返す。`cd foo && cat bar` のような連結は、
+ * 実際に何をしたかが先頭語に出ないので区切りごとに見る必要がある。
+ * ここでは最初のセグメントの先頭語だけを返す（誤検知を避ける保守的な判定）。
+ */
+function leadingWord(command: string): string {
+  const first = command.trim().split(/[\n;|&]/)[0] ?? "";
+  const word = first.trim().split(/\s+/)[0] ?? "";
+  // `sudo cat` のような接頭辞は剥がさない。素の呼び出しだけを対象にする。
+  return word;
+}
+
 /**
  * イベント列を数え上げてセッション指標にする。
  * ここでは「良し悪しの判断」を一切しない。閾値は rules/ 側で使う。
@@ -58,6 +79,12 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
   let redundantReads = 0;
   /** 直近に Read したファイル（編集が入ったら削除する） */
   const readSinceEdit = new Set<string>();
+
+  let editCalls = 0;
+  let verificationCalls = 0;
+  let bashInsteadOfTool = 0;
+  const bashInsteadOfToolByCommand: Record<string, number> = {};
+  let peakContextTokens = 0;
 
   let parallelizableOpportunities = 0;
   let parallelizableSequences = 0;
@@ -127,6 +154,11 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
     // そのターン時点でモデルに送られた文脈の大きさ
     contextGrowth.push(ev.usage.input + ev.usage.cacheRead);
 
+    // 上限への迫り具合はキャッシュ作成分も含めた実際の送信量で測る
+    const contextTokens =
+      ev.usage.input + ev.usage.cacheRead + ev.usage.cacheCreate;
+    if (contextTokens > peakContextTokens) peakContextTokens = contextTokens;
+
     // --- キャッシュ失効 ---
     const turnTime = Number.isFinite(t) ? t : 0;
     if (ev.usage.cacheRead > 0) {
@@ -151,6 +183,27 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
         toolsByName[tool.name] = { calls: 1, errors: 0 };
       } else {
         entry.calls++;
+      }
+
+      if (WRITE_TOOLS.has(tool.name)) editCalls++;
+
+      const command = bashCommandOf(tool);
+      if (command !== null) {
+        // 検証コマンド: パイプの途中や引数に現れても検証と見なす（取りこぼしを避ける）
+        if (
+          THRESHOLDS.verificationGap.commandPatterns.some((p) =>
+            command.includes(p),
+          )
+        ) {
+          verificationCalls++;
+        }
+        // 専用ツールでの代替: 先頭語だけを見る（保守的に判定する）
+        const head = leadingWord(command);
+        if (THRESHOLDS.bashOverNativeTools.replaceableCommands.includes(head)) {
+          bashInsteadOfTool++;
+          bashInsteadOfToolByCommand[head] =
+            (bashInsteadOfToolByCommand[head] ?? 0) + 1;
+        }
       }
     }
 
@@ -235,6 +288,11 @@ export function computeMetrics(input: MetricsInput): SessionMetrics {
     oversizedResults,
     largestResultBytes,
     largestResultTool,
+    editCalls,
+    verificationCalls,
+    bashInsteadOfTool,
+    bashInsteadOfToolByCommand,
+    peakContextTokens,
     parseErrors,
   };
 }

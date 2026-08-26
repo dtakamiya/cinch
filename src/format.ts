@@ -52,15 +52,18 @@ export const RULE_LABELS: Record<string, string> = {
   "cache-efficiency": "キャッシュ効率",
   "cache-ttl-waste": "キャッシュ TTL の無駄",
   "model-fit": "モデルの選択",
+  "context-window-headroom": "コンテキストの余裕",
   "tool-error-rate": "ツールエラー率",
   "redundant-file-reads": "冗長なファイル読み込み",
   "parallel-tool-use": "ツール呼び出しの並列化",
   "turn-efficiency": "ターンあたりの生産量",
   "oversized-tool-results": "巨大なツール結果",
+  "bash-over-native-tools": "専用ツールの代わりに Bash",
   "subagent-delegation": "サブエージェントへの委譲",
   "context-growth": "コンテキストの肥大",
   "claude-md-present": "CLAUDE.md の有無",
   "task-planning": "タスクの計画",
+  "verification-gap": "変更後の検証",
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {

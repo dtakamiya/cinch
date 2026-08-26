@@ -6,7 +6,7 @@ describe("cache-efficiency", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(cacheEfficiencyRule.id).toBe("cache-efficiency");
     expect(cacheEfficiencyRule.category).toBe("cost");
-    expect(cacheEfficiencyRule.weight).toBe(15);
+    expect(cacheEfficiencyRule.weight).toBe(12);
   });
 
   it("ヒット率 90%（満点閾値ちょうど）で満点", () => {

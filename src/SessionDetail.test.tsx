@@ -45,6 +45,11 @@ function detail(
       oversizedResults: 0,
       largestResultBytes: 0,
       largestResultTool: null,
+      editCalls: 0,
+      verificationCalls: 0,
+      bashInsteadOfTool: 0,
+      bashInsteadOfToolByCommand: {},
+      peakContextTokens: 0,
       parseErrors: 3,
     },
     score: {

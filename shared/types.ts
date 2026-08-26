@@ -86,6 +86,16 @@ export interface SessionMetrics {
   largestResultBytes: number;
   /** その最大結果を出したツール名（無ければ null） */
   largestResultTool: string | null;
+  /** ファイルを変更したツール呼び出し（Edit / Write / NotebookEdit）の回数 */
+  editCalls: number;
+  /** テスト・ビルド等の検証コマンドを実行した Bash 呼び出しの回数 */
+  verificationCalls: number;
+  /** 専用ツールで代替できた Bash 呼び出し（cat / ls / grep など）の回数 */
+  bashInsteadOfTool: number;
+  /** その内訳（コマンド名 → 回数） */
+  bashInsteadOfToolByCommand: Record<string, number>;
+  /** 1 ターンで送られた文脈の最大トークン数（input + cacheRead + cacheCreate） */
+  peakContextTokens: number;
   parseErrors: number;
 }
 

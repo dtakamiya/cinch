@@ -11,7 +11,7 @@ describe("context-growth", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(contextGrowthRule.id).toBe("context-growth");
     expect(contextGrowthRule.category).toBe("practice");
-    expect(contextGrowthRule.weight).toBe(10);
+    expect(contextGrowthRule.weight).toBe(8);
   });
 
   it("ターン数が閾値未満（4）なら判定せず満点", () => {
