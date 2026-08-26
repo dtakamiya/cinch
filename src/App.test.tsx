@@ -263,4 +263,61 @@ describe("App", () => {
     render(<App />);
     expect(await screen.findByText(/ネットワークエラー/)).toBeInTheDocument();
   });
+
+  it("一覧では自動更新トグルが出て、デフォルトで ON", async () => {
+    render(<App />);
+    await screen.findByText("cinch");
+    const toggle = screen.getByRole("checkbox", { name: /自動更新/ });
+    expect(toggle).toBeChecked();
+  });
+
+  it("詳細画面では自動更新トグルを出さない", async () => {
+    window.location.hash = "#/session/s1";
+    render(<App />);
+    await screen.findByText(/47 回中 12 回が失敗/);
+    expect(screen.queryByRole("checkbox", { name: /自動更新/ })).toBeNull();
+  });
+
+  it("自動更新の間隔でバックグラウンド再取得する（loading は出さない）", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<App />);
+      // 初回ロードを進める
+      await vi.runOnlyPendingTimersAsync();
+      const before = (globalThis.fetch as unknown as { mock: { calls: unknown[] } })
+        .mock.calls.length;
+
+      // 30 秒経過させる
+      await vi.advanceTimersByTimeAsync(30_000);
+
+      const after = (globalThis.fetch as unknown as { mock: { calls: unknown[] } })
+        .mock.calls.length;
+      expect(after).toBeGreaterThan(before);
+      // 静かな更新なので全画面の「読み込み中…」は出ない
+      expect(screen.queryByText(/読み込み中/)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("自動更新を OFF にするとポーリングが止まる", async () => {
+    vi.useFakeTimers();
+    try {
+      render(<App />);
+      await vi.runOnlyPendingTimersAsync();
+
+      // トグルを OFF にする（fake timer 下なので fireEvent を使う）
+      const toggle = screen.getByRole("checkbox", { name: /自動更新/ });
+      toggle.click();
+
+      const before = (globalThis.fetch as unknown as { mock: { calls: unknown[] } })
+        .mock.calls.length;
+      await vi.advanceTimersByTimeAsync(60_000);
+      const after = (globalThis.fetch as unknown as { mock: { calls: unknown[] } })
+        .mock.calls.length;
+      expect(after).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

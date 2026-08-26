@@ -28,15 +28,24 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const loadList = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
+  // silent: true のときは loading スピナー・エラーバナーを触らず、
+  // 成功時だけ一覧を差し替える（バックグラウンドのポーリング更新用）。
+  const loadList = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      setList(await fetchSessions());
+      const next = await fetchSessions();
+      setList(next);
+      if (silent) setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (!silent) setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -50,6 +59,43 @@ export function App() {
       void loadList();
     }
   }, [route.name, list, loadList]);
+
+  // 一覧表示中は一定間隔で静かに再スキャンする。タブが非表示の間は止め、
+  // 再表示されたタイミングで 1 回取り直す。
+  useEffect(() => {
+    if (route.name !== "list" || !autoRefresh) return;
+
+    const POLL_MS = 30_000;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const start = () => {
+      if (timer !== null) return;
+      timer = setInterval(() => {
+        if (!document.hidden) void loadList({ silent: true });
+      }, POLL_MS);
+    };
+    const stop = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        void loadList({ silent: true });
+        start();
+      }
+    };
+
+    start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [route.name, autoRefresh, loadList]);
 
   // 詳細 route のときは対象 sessionId の詳細を取得する
   useEffect(() => {
@@ -101,10 +147,22 @@ export function App() {
             <div className="app-brand__sub">Claude Code セッション採点</div>
           </div>
         </div>
-        <button type="button" className="link" onClick={rescan}>
-          <IconRefresh />
-          再スキャン
-        </button>
+        <div className="app-header__actions">
+          {route.name === "list" && (
+            <label className="app-header__toggle">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+              />
+              自動更新
+            </label>
+          )}
+          <button type="button" className="link" onClick={rescan}>
+            <IconRefresh />
+            再スキャン
+          </button>
+        </div>
       </header>
 
       {error !== null && (
