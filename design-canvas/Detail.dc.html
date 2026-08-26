@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --bg: oklch(0.16 0.012 265);
+      --panel: oklch(0.194 0.014 265);
+      --panel-2: oklch(0.224 0.016 265);
+      --border: oklch(0.30 0.014 265);
+      --border-soft: oklch(0.26 0.012 265);
+      --fg: oklch(0.96 0.005 265);
+      --muted: oklch(0.68 0.012 265);
+      --faint: oklch(0.52 0.012 265);
+      --accent: oklch(0.64 0.19 275);
+      --accent-soft: oklch(0.64 0.19 275 / 0.14);
+      --good: oklch(0.72 0.15 155);
+      --warn: oklch(0.72 0.15 75);
+      --bad: oklch(0.68 0.15 25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: Inter, system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: oklch(0.72 0.16 275); }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="min-height: 900px; width: 1440px; background:
+  radial-gradient(1200px 600px at 85% -10%, oklch(0.64 0.19 275 / 0.10), transparent 60%),
+  var(--bg); padding: 32px 56px 64px;">
+
+  <a href="#" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted);">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+    一覧に戻る
+  </a>
+
+  <!-- Title block -->
+  <div style="display: flex; align-items: center; gap: 28px; margin-top: 20px;">
+    <div style="position: relative; width: 108px; height: 108px; flex-shrink: 0;">
+      <svg width="108" height="108" viewBox="0 0 108 108">
+        <circle cx="54" cy="54" r="46" fill="none" stroke="var(--border)" stroke-width="8"></circle>
+        <circle cx="54" cy="54" r="46" fill="none" stroke="var(--good)" stroke-width="8" stroke-linecap="round"
+          stroke-dasharray="263.2 25.8" transform="rotate(-90 54 54)"></circle>
+      </svg>
+      <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <span class="num" style="font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1;">91</span>
+        <span style="font-size: 11px; color: var(--faint);">/ 100</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">cinch</h1>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <span style="font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 5px 10px;">開始 8/26 14:12</span>
+        <span style="font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 5px 10px;">所要 1時間4分</span>
+        <span style="font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 5px 10px;">assistant 38 ターン</span>
+        <span style="font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 5px 10px;">ツール 214（失敗 3）</span>
+        <span style="font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 5px 10px;">claude-sonnet-5（34）/ claude-haiku（4）</span>
+        <span style="font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 5px 10px;">branch main</span>
+        <span style="font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 5px 10px;">出力 48,210 トークン</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 36px;">
+
+    <sc-for list="{{categories}}" as="c" hint-placeholder-count="3">
+      <section style="background: var(--panel); border: 1px solid var(--border-soft); border-radius: 14px; padding: 20px; display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.01em;">{{c.label}}</h3>
+          <span class="num" style="font-size: 13px; color: var(--muted);">{{c.earned}} / {{c.max}}</span>
+        </div>
+        <div style="height: 5px; border-radius: 999px; background: var(--border); margin-top: 12px; overflow: hidden;">
+          <div style="height: 100%; width: {{c.pct}}; border-radius: 999px; background: {{c.barColor}};"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 16px;">
+          <sc-for list="{{c.rules}}" as="rule" hint-placeholder-count="4">
+            <div style="padding: 12px 0; border-top: 1px solid var(--border-soft);">
+              <div style="display: flex; align-items: center; gap: 9px;">
+                <sc-if value="{{rule.ok}}" hint-placeholder-val="{{ true }}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                </sc-if>
+                <sc-if value="{{rule.ng}}" hint-placeholder-val="{{ false }}">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                </sc-if>
+                <span style="font-size: 13px; font-weight: 500; flex: 1;">{{rule.label}}</span>
+                <span class="num" style="font-size: 12px; color: var(--faint);">{{rule.earned}} / {{rule.max}}</span>
+              </div>
+              <sc-if value="{{rule.hasDetail}}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 8px 0 0 25px; font-size: 12.5px; color: var(--muted); line-height: 1.5;">{{rule.evidence}}</p>
+              </sc-if>
+              <sc-if value="{{rule.hasAdvice}}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 6px 0 0 25px; font-size: 12.5px; color: var(--accent); line-height: 1.5;">→ {{rule.advice}}</p>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-for>
+
+  </div>
+</div>
+
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const barColor = (p) => (p >= 0.8 ? "var(--good)" : p >= 0.6 ? "var(--warn)" : "var(--bad)");
+    const cat = (label, earned, max, rules) => ({
+      label, earned, max,
+      pct: `${Math.round((earned / max) * 100)}%`,
+      barColor: barColor(earned / max),
+      rules: rules.map((r) => ({
+        ok: r.earned >= r.max, ng: r.earned < r.max,
+        label: r.label, earned: r.earned, max: r.max,
+        hasDetail: !!r.evidence, evidence: r.evidence || "",
+        hasAdvice: !!r.advice, advice: r.advice || "",
+      })),
+    };
+    return {
+      categories: [
+        cat("コスト効率", 33, 40, [
+          { label: "キャッシュ効率", earned: 14, max: 15 },
+          { label: "キャッシュ TTL の無駄", earned: 6, max: 10, evidence: "1h キャッシュを 4 回作成、うち 3 回は 5m で足りた", advice: "短い探索では 1h キャッシュを避け、まとめて読む" },
+          { label: "モデルの選択", earned: 13, max: 15, evidence: "単純な整形作業 2 ターンが sonnet 上で実行された", advice: "定型変換は haiku に切り替える" },
+        ]),
+        cat("生産性", 25, 35, [
+          { label: "ツールエラー率", earned: 8, max: 12, evidence: "214 回中 3 回が失敗（1.4%）", advice: "存在確認してから編集する" },
+          { label: "冗長なファイル読み込み", earned: 7, max: 10, evidence: "同一ファイルを 3 回読み込み" },
+          { label: "ツール呼び出しの並列化", earned: 6, max: 8, evidence: "読み取り専用 4 ターンが逐次実行された", advice: "独立した読み取りは 1 ターンにまとめる" },
+          { label: "ターンあたりの生産量", earned: 4, max: 5 },
+        ]),
+        cat("ベストプラクティス", 23, 25, [
+          { label: "サブエージェントへの委譲", earned: 8, max: 8 },
+          { label: "コンテキストの肥大", earned: 7, max: 9, evidence: "終盤 3 ターンで入力が 18 万トークンに達した", advice: "大きな出力は Explore に委譲して結論だけ受け取る" },
+          { label: "CLAUDE.md の有無", earned: 8, max: 8 },
+        ]),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

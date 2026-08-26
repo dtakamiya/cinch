@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { SessionDetailResponse, SessionsResponse } from "../shared/types.js";
 import { fetchSessionDetail, fetchSessions } from "./api.js";
+import { IconLogo, IconRefresh } from "./icons.js";
 import { SessionDetail } from "./SessionDetail.js";
 import { SessionList } from "./SessionList.js";
 
@@ -42,8 +43,17 @@ export function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>cinch</h1>
+        <div className="app-brand">
+          <span className="app-logo">
+            <IconLogo size={20} />
+          </span>
+          <div>
+            <h1>cinch</h1>
+            <div className="app-brand__sub">Claude Code セッション採点</div>
+          </div>
+        </div>
         <button type="button" className="link" onClick={() => void loadList()}>
+          <IconRefresh />
           再スキャン
         </button>
       </header>

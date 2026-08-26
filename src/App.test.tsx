@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App.js";
 import type { SessionsResponse, SessionDetailResponse } from "../shared/types.js";
@@ -110,8 +110,8 @@ describe("App", () => {
 
   it("一覧を取得して表示する", async () => {
     render(<App />);
-    expect(await screen.findByText("cinch")).toBeInTheDocument();
-    expect(screen.getByText("64")).toBeInTheDocument();
+    const card = await screen.findByRole("button", { name: /cinch/ });
+    expect(within(card).getByText("64")).toBeInTheDocument();
   });
 
   it("行をクリックすると詳細を取得して表示する", async () => {

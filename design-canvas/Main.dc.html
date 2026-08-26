@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --bg: oklch(0.16 0.012 265);
+      --panel: oklch(0.194 0.014 265);
+      --panel-2: oklch(0.224 0.016 265);
+      --border: oklch(0.30 0.014 265);
+      --border-soft: oklch(0.26 0.012 265);
+      --fg: oklch(0.96 0.005 265);
+      --muted: oklch(0.68 0.012 265);
+      --faint: oklch(0.52 0.012 265);
+      --accent: oklch(0.64 0.19 275);
+      --accent-soft: oklch(0.64 0.19 275 / 0.14);
+      --good: oklch(0.72 0.15 155);
+      --warn: oklch(0.72 0.15 75);
+      --bad: oklch(0.68 0.15 25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: Inter, system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: oklch(0.72 0.16 275); }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+
+<div style="min-height: 900px; width: 1440px; background:
+  radial-gradient(1200px 600px at 15% -10%, oklch(0.64 0.19 275 / 0.10), transparent 60%),
+  var(--bg); padding: 40px 56px 64px;">
+
+  <!-- Header -->
+  <header style="display: flex; align-items: flex-start; justify-content: space-between; gap: 32px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft);
+        border: 1px solid oklch(0.64 0.19 275 / 0.35); display: flex; align-items: center; justify-content: center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="oklch(0.64 0.19 275)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size: 18px; font-weight: 700; letter-spacing: -0.01em;">cinch</div>
+        <div style="font-size: 12px; color: var(--faint);">Claude Code セッション採点</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: stretch; gap: 14px;">
+      <div style="background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px;
+        padding: 12px 20px; display: flex; flex-direction: column; gap: 2px; min-width: 128px;">
+        <div style="font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em;">平均スコア</div>
+        <div style="display: flex; align-items: baseline; gap: 4px;">
+          <span class="num" style="font-size: 28px; font-weight: 700; letter-spacing: -0.02em;">72.4</span>
+          <span style="font-size: 13px; color: var(--muted);">/ 100</span>
+        </div>
+      </div>
+      <div style="background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px;
+        padding: 12px 20px; display: flex; flex-direction: column; gap: 2px; min-width: 128px;">
+        <div style="font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em;">採点済み</div>
+        <div style="display: flex; align-items: baseline; gap: 4px;">
+          <span class="num" style="font-size: 28px; font-weight: 700; letter-spacing: -0.02em;">18</span>
+          <span style="font-size: 13px; color: var(--muted);">/ 24 件</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filter bar -->
+  <div style="display: flex; align-items: center; gap: 10px; margin-top: 32px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 7px; background: var(--panel); border: 1px solid var(--border-soft);
+      border-radius: 9px; padding: 7px 12px; font-size: 13px;">
+      <span style="color: var(--faint);">プロジェクト</span>
+      <span style="font-weight: 500;">すべて</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 7px; background: var(--panel); border: 1px solid var(--border-soft);
+      border-radius: 9px; padding: 7px 12px; font-size: 13px;">
+      <span style="color: var(--faint);">期間</span>
+      <span style="font-weight: 500;">7 日</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 7px; background: var(--accent-soft); border: 1px solid oklch(0.64 0.19 275 / 0.35);
+      border-radius: 9px; padding: 7px 12px; font-size: 13px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5h10"></path><path d="M11 9h7"></path><path d="M11 13h4"></path><path d="m3 17 3 3 3-3"></path><path d="M6 18V4"></path></svg>
+      <span style="font-weight: 500; color: var(--fg);">スコア順</span>
+    </div>
+    <div style="flex: 1;"></div>
+    <div style="font-size: 12px; color: var(--faint);" class="num">24 セッション</div>
+  </div>
+
+  <!-- Session rows -->
+  <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px;">
+
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <sc-if value="{{r.gradable}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 20px;
+          background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px 20px;">
+
+          <!-- score ring -->
+          <div style="position: relative; width: 64px; height: 64px;">
+            <svg width="64" height="64" viewBox="0 0 64 64">
+              <circle cx="32" cy="32" r="27" fill="none" stroke="var(--border)" stroke-width="5"></circle>
+              <circle cx="32" cy="32" r="27" fill="none" stroke="{{r.ringColor}}" stroke-width="5" stroke-linecap="round"
+                stroke-dasharray="{{r.dash}}" transform="rotate(-90 32 32)"></circle>
+            </svg>
+            <div class="num" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              font-size: 17px; font-weight: 700; letter-spacing: -0.02em;">{{r.total}}</div>
+          </div>
+
+          <!-- middle -->
+          <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+            <div style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">{{r.project}}</div>
+            <div style="display: flex; align-items: center; gap: 16px; font-size: 12.5px; color: var(--muted);" class="num">
+              <span style="display: flex; align-items: center; gap: 5px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                {{r.startedAt}}
+              </span>
+              <span style="display: flex; align-items: center; gap: 5px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                {{r.duration}}
+              </span>
+              <span style="display: flex; align-items: center; gap: 5px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"></path></svg>
+                {{r.turns}} ターン
+              </span>
+            </div>
+          </div>
+
+          <!-- right: top deduction -->
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 11px; color: var(--faint);">主な減点</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2);
+              border: 1px solid var(--border-soft); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; font-weight: 500;">
+              <span style="width: 6px; height: 6px; border-radius: 999px; background: {{r.tagDot}};"></span>
+              {{r.topDeduction}}
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{r.ungraded}}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 20px;
+          background: transparent; border: 1px dashed var(--border-soft); border-radius: 12px; padding: 14px 20px;">
+          <div style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h8"></path></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div style="font-size: 14.5px; font-weight: 500; color: var(--muted);">{{r.project}}</div>
+            <div style="font-size: 12.5px; color: var(--faint);" class="num">{{r.startedAt}} ・ {{r.turns}} ターン</div>
+          </div>
+          <span style="font-size: 12px; color: var(--faint); border: 1px solid var(--border-soft); border-radius: 999px; padding: 4px 12px;">採点対象外</span>
+        </div>
+      </sc-if>
+    </sc-for>
+
+  </div>
+</div>
+
+</x-dc>
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const ring = (total) => {
+      const c = 2 * Math.PI * 27;
+      const on = (total / 100) * c;
+      return `${on.toFixed(1)} ${(c - on).toFixed(1)}`;
+    };
+    const color = (t) =>
+      t >= 80 ? "var(--good)" : t >= 60 ? "var(--warn)" : "var(--bad)";
+    const dot = (t) =>
+      t >= 80 ? "var(--good)" : t >= 60 ? "var(--warn)" : "var(--bad)";
+    const g = (o) => ({
+      gradable: true, ungraded: false,
+      total: o.total, project: o.project, startedAt: o.startedAt,
+      duration: o.duration, turns: o.turns, topDeduction: o.topDeduction,
+      dash: ring(o.total), ringColor: color(o.total), tagDot: dot(o.total),
+    });
+    const u = (o) => ({
+      gradable: false, ungraded: true,
+      project: o.project, startedAt: o.startedAt, turns: o.turns,
+    });
+    return {
+      rows: [
+        g({ total: 91, project: "cinch", startedAt: "8/26 14:12", duration: "1時間4分", turns: 38, topDeduction: "キャッシュ TTL の無駄" }),
+        g({ total: 78, project: "web-console", startedAt: "8/26 11:03", duration: "42分", turns: 21, topDeduction: "ツールエラー率" }),
+        g({ total: 74, project: "billing-api", startedAt: "8/25 19:47", duration: "2時間", turns: 55, topDeduction: "冗長なファイル読み込み" }),
+        g({ total: 63, project: "infra-scripts", startedAt: "8/25 09:20", duration: "28分", turns: 14, topDeduction: "モデルの選択" }),
+        g({ total: 52, project: "mobile-app", startedAt: "8/24 16:40", duration: "1時間18分", turns: 44, topDeduction: "コンテキストの肥大" }),
+        u({ project: "docs-site", startedAt: "8/24 10:05", turns: 2 }),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

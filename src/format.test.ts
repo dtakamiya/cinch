@@ -6,6 +6,7 @@ import {
   formatDuration,
   formatScore,
   scoreBar,
+  scoreColor,
 } from "./format.js";
 
 describe("formatDateTime", () => {
@@ -67,6 +68,23 @@ describe("scoreBar", () => {
   it("スコアが高いほど濃いブロックになる", () => {
     expect(scoreBar(100)).toBe("███");
     expect(scoreBar(0)).toBe("▁▁▁");
+  });
+});
+
+describe("scoreColor", () => {
+  it("80 以上は good", () => {
+    expect(scoreColor(80)).toBe("var(--good)");
+    expect(scoreColor(100)).toBe("var(--good)");
+  });
+
+  it("60 以上 80 未満は warn", () => {
+    expect(scoreColor(60)).toBe("var(--warn)");
+    expect(scoreColor(79)).toBe("var(--warn)");
+  });
+
+  it("60 未満は bad", () => {
+    expect(scoreColor(59)).toBe("var(--bad)");
+    expect(scoreColor(0)).toBe("var(--bad)");
   });
 });
 

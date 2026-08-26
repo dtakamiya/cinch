@@ -5,3 +5,6 @@ dist/
 
 # ローカル固有の Claude Code 設定
 .claude/settings.local.json
+
+# デザインキャンバスのシード済み生成物（design スキルで再生成可能）
+design-canvas/cinch-dashboard.html

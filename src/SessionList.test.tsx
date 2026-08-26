@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SessionList, filterAndSort } from "./SessionList.js";
 import type { SessionSummary, SessionsResponse } from "../shared/types.js";
@@ -86,9 +86,11 @@ describe("filterAndSort", () => {
 describe("SessionList", () => {
   it("セッションを行として表示する", () => {
     render(<SessionList data={response([summary()])} onSelect={() => {}} />);
-    expect(screen.getByRole("button", { name: "cinch" })).toBeInTheDocument();
-    expect(screen.getByText("71")).toBeInTheDocument();
-    expect(screen.getByText("38")).toBeInTheDocument();
+    // カード全体が button。アクセシブルネームにプロジェクト名を含む。
+    const card = screen.getByRole("button", { name: /cinch/ });
+    expect(card).toBeInTheDocument();
+    expect(within(card).getByText("71")).toBeInTheDocument();
+    expect(within(card).getByText("38 ターン")).toBeInTheDocument();
   });
 
   it("主な減点をルールの日本語名で表示する", () => {
@@ -117,8 +119,8 @@ describe("SessionList", () => {
         onSelect={() => {}}
       />,
     );
-    expect(screen.getByText(/平均 70/)).toBeInTheDocument();
-    expect(screen.getByText(/採点済 2件 \/ 全3件/)).toBeInTheDocument();
+    expect(screen.getByText("70")).toBeInTheDocument();
+    expect(screen.getByText(/件 \/ 全3件/)).toBeInTheDocument();
   });
 
   it("行をクリックすると onSelect が sessionId 付きで呼ばれる", async () => {

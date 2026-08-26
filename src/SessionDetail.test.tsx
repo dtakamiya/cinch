@@ -113,10 +113,13 @@ describe("SessionDetail", () => {
     expect(screen.getAllByText(/^→/)).toHaveLength(2);
   });
 
-  it("満点のルールに ✓、減点のあるルールに ✗ を付ける", () => {
+  it("満点のルールに ✓、減点のあるルールに ✗ アイコンを付ける", () => {
     render(<SessionDetail data={detail()} onBack={() => {}} />);
-    expect(screen.getAllByText("✗")).toHaveLength(2);
-    expect(screen.getAllByText("✓")).toHaveLength(1);
+    const marks = screen.getAllByTestId("rule-mark");
+    const ok = marks.filter((m) => m.getAttribute("data-ok") === "true");
+    const ng = marks.filter((m) => m.getAttribute("data-ok") === "false");
+    expect(ng).toHaveLength(2);
+    expect(ok).toHaveLength(1);
   });
 
   it("減点のあるルールを先に並べる", () => {

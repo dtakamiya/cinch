@@ -1,10 +1,13 @@
 import { CATEGORIES, type Category, type SessionDetailResponse } from "../shared/types.js";
+import { ScoreRing } from "./ScoreRing.js";
+import { IconCheck, IconChevronLeft, IconX } from "./icons.js";
 import {
   CATEGORY_LABELS,
   RULE_LABELS,
   formatDateTime,
   formatDuration,
   formatScore,
+  scoreColor,
 } from "./format.js";
 
 export function SessionDetail({
@@ -23,27 +26,38 @@ export function SessionDetail({
   return (
     <div className="detail">
       <button type="button" className="link" onClick={onBack}>
-        ← 一覧に戻る
+        <IconChevronLeft />
+        一覧に戻る
       </button>
 
-      <h2>
-        {metrics.projectName}{" "}
+      <div className="detail-hero">
         {score.gradable ? (
-          <span className="score">{formatScore(score.total)}</span>
-        ) : (
-          <span className="ungraded">採点対象外</span>
-        )}
-      </h2>
-
-      <div className="meta-grid">
-        <span>開始 {formatDateTime(metrics.startedAt)}</span>
-        <span>所要 {formatDuration(metrics.durationMs)}</span>
-        <span>assistant ターン {metrics.assistantTurns}</span>
-        <span>ツール呼び出し {metrics.toolCalls}（失敗 {metrics.toolErrors}）</span>
-        <span>モデル {models === "" ? "—" : models}</span>
-        <span>バージョン {metrics.version === "" ? "—" : metrics.version}</span>
-        <span>ブランチ {metrics.gitBranch ?? "—"}</span>
-        <span>出力 {metrics.totals.output.toLocaleString()} トークン</span>
+          <div className="detail-hero__ring">
+            <ScoreRing total={score.total} size={108} />
+          </div>
+        ) : null}
+        <div>
+          <h2>
+            {metrics.projectName}{" "}
+            {score.gradable ? null : <span className="ungraded">採点対象外</span>}
+          </h2>
+          <div className="meta-chips">
+            <span className="meta-chip">開始 {formatDateTime(metrics.startedAt)}</span>
+            <span className="meta-chip">所要 {formatDuration(metrics.durationMs)}</span>
+            <span className="meta-chip">assistant {metrics.assistantTurns} ターン</span>
+            <span className="meta-chip">
+              ツール {metrics.toolCalls}（失敗 {metrics.toolErrors}）
+            </span>
+            <span className="meta-chip">モデル {models === "" ? "—" : models}</span>
+            <span className="meta-chip">
+              バージョン {metrics.version === "" ? "—" : metrics.version}
+            </span>
+            <span className="meta-chip">ブランチ {metrics.gitBranch ?? "—"}</span>
+            <span className="meta-chip">
+              出力 {metrics.totals.output.toLocaleString()} トークン
+            </span>
+          </div>
+        </div>
       </div>
 
       {metrics.parseErrors > 0 && (
@@ -58,9 +72,11 @@ export function SessionDetail({
           キャッシュ効率などの指標が意味を持たないため、スコアを付けていません。
         </p>
       ) : (
-        CATEGORIES.map((category) => (
-          <CategoryBlock key={category} category={category} data={data} />
-        ))
+        <div className="category-grid">
+          {CATEGORIES.map((category) => (
+            <CategoryBlock key={category} category={category} data={data} />
+          ))}
+        </div>
       )}
     </div>
   );
@@ -78,23 +94,41 @@ function CategoryBlock({
   const rules = data.score.rules.filter((r) => r.category === category);
   if (rules.length === 0) return null;
 
+  const pct = bucket.max === 0 ? 0 : bucket.earned / bucket.max;
+
   return (
-    <section className="category-block">
-      <h3>
-        {CATEGORY_LABELS[category]}{" "}
+    <section className="category-card">
+      <div className="category-card__head">
+        <h3>{CATEGORY_LABELS[category]}</h3>
         <span className="rule-points">
           {formatScore(bucket.earned)} / {bucket.max}
         </span>
-      </h3>
+      </div>
+      <div className="category-bar">
+        <div
+          className="category-bar__fill"
+          style={{
+            width: `${Math.round(pct * 100)}%`,
+            background:
+              pct >= 0.8
+                ? "var(--good)"
+                : pct >= 0.6
+                  ? "var(--warn)"
+                  : "var(--bad)",
+          }}
+        />
+      </div>
       {rules.map((rule) => {
         const full = rule.earned >= rule.max;
         return (
           <div className="rule-row" key={rule.id}>
             <div className="rule-head">
-              <span className={`rule-mark ${full ? "ok" : "ng"}`}>
-                {full ? "✓" : "✗"}
+              <span className="rule-mark" data-testid="rule-mark" data-ok={full}>
+                {full ? <IconCheck size={16} /> : <IconX size={16} />}
               </span>
-              <span data-testid="rule-label">{RULE_LABELS[rule.id] ?? rule.id}</span>
+              <span className="rule-head__label" data-testid="rule-label">
+                {RULE_LABELS[rule.id] ?? rule.id}
+              </span>
               <span className="rule-points">
                 {formatScore(rule.earned)} / {rule.max}
               </span>

@@ -24,6 +24,16 @@ export function formatScore(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
+/**
+ * スコアの良し悪しを 3 段階の CSS 変数名で返す。
+ * 円形リングや割合バーの色分けに使う。閾値は 80 / 60。
+ */
+export function scoreColor(total: number): string {
+  if (total >= 80) return "var(--good)";
+  if (total >= 60) return "var(--warn)";
+  return "var(--bad)";
+}
+
 /** スコアを 3 段のブロック文字で表す。一覧で視線を走らせるときの手がかり。 */
 const BLOCKS = ["▁", "▃", "▅", "█"];
 
