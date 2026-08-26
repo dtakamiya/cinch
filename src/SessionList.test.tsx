@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { SessionList, filterAndSort, summarize } from "./SessionList.js";
 import type { SessionSummary, SessionsResponse } from "../shared/types.js";
 
@@ -41,17 +41,17 @@ describe("filterAndSort", () => {
   ];
 
   it("スコアの高い順に並べる", () => {
-    const out = filterAndSort(sessions, { project: "", period: "all", sortBy: "score" });
+    const out = filterAndSort(sessions, { project: "", period: "all", sortBy: "score", showUngraded: true });
     expect(out.map((s) => s.sessionId)).toEqual(["b", "c", "a"]);
   });
 
   it("日付の新しい順に並べる", () => {
-    const out = filterAndSort(sessions, { project: "", period: "all", sortBy: "date" });
+    const out = filterAndSort(sessions, { project: "", period: "all", sortBy: "date", showUngraded: true });
     expect(out.map((s) => s.sessionId)).toEqual(["a", "c", "b"]);
   });
 
   it("プロジェクトで絞り込む", () => {
-    const out = filterAndSort(sessions, { project: "cinch", period: "all", sortBy: "score" });
+    const out = filterAndSort(sessions, { project: "cinch", period: "all", sortBy: "score", showUngraded: true });
     expect(out.map((s) => s.sessionId)).toEqual(["c", "a"]);
   });
 
@@ -60,24 +60,47 @@ describe("filterAndSort", () => {
       ...sessions,
       summary({ sessionId: "d", total: 0, gradable: false, topDeduction: null }),
     ];
-    const out = filterAndSort(withUngraded, { project: "", period: "all", sortBy: "score" });
+    const out = filterAndSort(withUngraded, { project: "", period: "all", sortBy: "score", showUngraded: true });
     expect(out[out.length - 1]?.sessionId).toBe("d");
+  });
+
+  it("showUngraded が false なら採点対象外を除外する", () => {
+    const withUngraded = [
+      ...sessions,
+      summary({ sessionId: "d", total: 0, gradable: false, topDeduction: null }),
+    ];
+    const out = filterAndSort(withUngraded, { project: "", period: "all", sortBy: "score", showUngraded: false });
+    expect(out.map((s) => s.sessionId)).toEqual(["b", "c", "a"]);
+  });
+
+  it("showUngraded が true なら採点対象外を末尾に含める", () => {
+    const withUngraded = [
+      ...sessions,
+      summary({ sessionId: "d", total: 0, gradable: false, topDeduction: null }),
+    ];
+    const out = filterAndSort(withUngraded, { project: "", period: "all", sortBy: "score", showUngraded: true });
+    expect(out.map((s) => s.sessionId)).toEqual(["b", "c", "a", "d"]);
+  });
+
+  it("showUngraded が false でも gradable のみの配列は変化しない", () => {
+    const out = filterAndSort(sessions, { project: "", period: "all", sortBy: "score", showUngraded: false });
+    expect(out.map((s) => s.sessionId)).toEqual(["b", "c", "a"]);
   });
 
   it("期間フィルタで範囲外を除く", () => {
     const now = new Date("2026-08-25T00:00:00.000Z");
     vi.setSystemTime(now);
-    const out = filterAndSort(sessions, { project: "", period: "7d", sortBy: "score" });
+    const out = filterAndSort(sessions, { project: "", period: "7d", sortBy: "score", showUngraded: true });
     expect(out).toHaveLength(3);
 
-    const narrow = filterAndSort(sessions, { project: "", period: "1d", sortBy: "score" });
+    const narrow = filterAndSort(sessions, { project: "", period: "1d", sortBy: "score", showUngraded: true });
     expect(narrow.map((s) => s.sessionId)).toEqual(["a"]);
     vi.useRealTimers();
   });
 
   it("元の配列を変更しない", () => {
     const original = [...sessions];
-    filterAndSort(sessions, { project: "", period: "all", sortBy: "score" });
+    filterAndSort(sessions, { project: "", period: "all", sortBy: "score", showUngraded: true });
     expect(sessions).toEqual(original);
   });
 });
@@ -138,7 +161,7 @@ describe("SessionList", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
   });
 
-  it("平均点と採点済み件数を表示する", () => {
+  it("平均点と採点済み件数を表示する（採点対象外を表示したとき全件に含める）", () => {
     render(
       <SessionList
         data={response([
@@ -148,7 +171,11 @@ describe("SessionList", () => {
         ])}
       />,
     );
+    // デフォルトは採点対象外を除外するので全2件
     expect(screen.getByText("70")).toBeInTheDocument();
+    expect(screen.getByText(/件 \/ 全2件/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("採点対象外を表示"));
     expect(screen.getByText(/件 \/ 全3件/)).toBeInTheDocument();
   });
 
@@ -158,12 +185,15 @@ describe("SessionList", () => {
     expect(card).toHaveAttribute("href", "#/session/a%2Fb%20c");
   });
 
-  it("採点対象外のセッションはスコアの代わりに — を出す", () => {
+  it("採点対象外はデフォルトで表示せず、トグルで表示できる", () => {
     render(
       <SessionList
         data={response([summary({ gradable: false, total: 0, topDeduction: null })])}
       />,
     );
+    expect(screen.queryByText("採点対象外")).toBeNull();
+
+    fireEvent.click(screen.getByLabelText("採点対象外を表示"));
     expect(screen.getByText("採点対象外")).toBeInTheDocument();
   });
 
@@ -173,6 +203,7 @@ describe("SessionList", () => {
         data={response([summary({ gradable: false, total: 0, topDeduction: null })])}
       />,
     );
+    fireEvent.click(screen.getByLabelText("採点対象外を表示"));
     expect(screen.queryByRole("link")).toBeNull();
   });
 

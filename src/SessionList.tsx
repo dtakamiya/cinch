@@ -20,6 +20,7 @@ export interface Filters {
   project: string;
   period: string;
   sortBy: "score" | "date";
+  showUngraded: boolean;
 }
 
 const PERIOD_DAYS: Record<string, number | null> = {
@@ -38,6 +39,7 @@ export function filterAndSort(
   const cutoff = days === null ? null : Date.now() - days * 24 * 60 * 60 * 1000;
 
   const filtered = sessions.filter((s) => {
+    if (!filters.showUngraded && !s.gradable) return false;
     if (filters.project !== "" && s.projectName !== filters.project) return false;
     if (cutoff !== null) {
       const t = Date.parse(s.startedAt);
@@ -73,6 +75,7 @@ export function SessionList({ data }: { data: SessionsResponse }) {
     project: "",
     period: "all",
     sortBy: "score",
+    showUngraded: false,
   });
 
   const projects = useMemo(
@@ -147,6 +150,16 @@ export function SessionList({ data }: { data: SessionsResponse }) {
             <option value="score">スコア順</option>
             <option value="date">新しい順</option>
           </select>
+        </label>
+        <label className="filter-pill">
+          <input
+            type="checkbox"
+            checked={filters.showUngraded}
+            onChange={(e) =>
+              setFilters({ ...filters, showUngraded: e.target.checked })
+            }
+          />
+          採点対象外を表示
         </label>
         <span className="filter-bar__count num">{rows.length} セッション</span>
       </div>

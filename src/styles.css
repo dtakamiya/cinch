@@ -206,6 +206,18 @@ body {
   color: initial;
 }
 
+.filter-pill:has(input[type="checkbox"]) {
+  cursor: pointer;
+}
+
+.filter-pill input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+}
+
 .filter-bar__count {
   margin-left: auto;
   font-size: 12px;
@@ -273,6 +285,11 @@ body {
   cursor: pointer;
   box-shadow: var(--shadow);
   transition: border-color 0.12s ease, transform 0.12s ease;
+  /* 画面外カードのレンダリング（レイアウト・ペイント）をスキップさせる。
+     258 件規模の一覧でスクロールとページ内検索を軽くする。
+     推定高 76px = padding 32px + ScoreRing 44px（中身の最大行）。 */
+  content-visibility: auto;
+  contain-intrinsic-size: 0 76px;
 }
 
 .session-card:hover {
@@ -608,6 +625,8 @@ body {
   .session-card {
     grid-template-columns: auto 1fr;
     gap: 14px;
+    /* モバイルは right 列が別行に折り返してカードが縦に伸びる分、推定高を上げる */
+    contain-intrinsic-size: 0 132px;
   }
 
   .session-card__right {
