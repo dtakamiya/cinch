@@ -24,14 +24,14 @@ npm start
 
 ## スコアリング
 
-3 カテゴリ、計 10 ルール、100 点満点。assistant ターンが 3 回未満のセッションは
+3 カテゴリ、計 15 ルール、100 点満点。assistant ターンが 3 回未満のセッションは
 採点対象外（一覧には出るがスコアは付かない）。
 
 | カテゴリ | 配点 | ルール |
 |---------|------|-------|
-| コスト効率 | 35 | `cache-efficiency`(15) / `cache-ttl-waste`(10) / `model-fit`(10) |
-| 生産性 | 35 | `tool-error-rate`(12) / `redundant-file-reads`(8) / `parallel-tool-use`(8) / `turn-efficiency`(7) |
-| ベストプラクティス | 30 | `subagent-delegation`(12) / `context-growth`(10) / `claude-md-present`(8) |
+| コスト効率 | 35 | `cache-efficiency`(12) / `cache-ttl-waste`(10) / `model-fit`(8) / `context-window-headroom`(5) |
+| 生産性 | 35 | `tool-error-rate`(9) / `redundant-file-reads`(6) / `parallel-tool-use`(6) / `turn-efficiency`(7) / `oversized-tool-results`(4) / `bash-over-native-tools`(3) |
+| ベストプラクティス | 30 | `subagent-delegation`(7) / `context-growth`(8) / `claude-md-present`(4) / `task-planning`(4) / `verification-gap`(7) |
 
 閾値はすべて `server/config/thresholds.ts` にある。実データを見て調整する前提の
 初期値なので、感覚と合わなければここだけを触る（ルールのテストは壊れない）。

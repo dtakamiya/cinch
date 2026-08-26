@@ -51,7 +51,7 @@ discover.ts → parse.ts → metrics.ts → rules/*.ts → score.ts → api.ts
 
 ### 採点モデル
 
-3 カテゴリ（`cost` / `productivity` / `practice`）、計 10 ルール、100 点満点。
+3 カテゴリ（`cost` / `productivity` / `practice`）、計 15 ルール、100 点満点。
 `WEIGHTS`（`thresholds.ts`）の合計は常に 100 を保つ。assistant ターンが `minGradableTurns`(3) 未満の
 セッションは `gradable: false`（一覧には出るがスコアなし）。
 
