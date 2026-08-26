@@ -56,9 +56,11 @@ export const RULE_LABELS: Record<string, string> = {
   "redundant-file-reads": "冗長なファイル読み込み",
   "parallel-tool-use": "ツール呼び出しの並列化",
   "turn-efficiency": "ターンあたりの生産量",
+  "oversized-tool-results": "巨大なツール結果",
   "subagent-delegation": "サブエージェントへの委譲",
   "context-growth": "コンテキストの肥大",
   "claude-md-present": "CLAUDE.md の有無",
+  "task-planning": "タスクの計画",
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {
