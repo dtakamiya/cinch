@@ -10,13 +10,7 @@ import {
   scoreColor,
 } from "./format.js";
 
-export function SessionDetail({
-  data,
-  onBack,
-}: {
-  data: SessionDetailResponse;
-  onBack: () => void;
-}) {
+export function SessionDetail({ data }: { data: SessionDetailResponse }) {
   const { metrics, score } = data;
   const models = Object.entries(metrics.models)
     .sort((a, b) => b[1] - a[1])
@@ -25,10 +19,10 @@ export function SessionDetail({
 
   return (
     <div className="detail">
-      <button type="button" className="link" onClick={onBack}>
+      <a className="link" href="#/">
         <IconChevronLeft />
         一覧に戻る
-      </button>
+      </a>
 
       <div className="detail-hero">
         {score.gradable ? (

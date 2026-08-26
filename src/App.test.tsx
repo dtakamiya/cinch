@@ -103,11 +103,13 @@ function mockFetch(handler: (url: string) => unknown, ok = true): void {
 }
 
 beforeEach(() => {
+  window.location.hash = "";
   mockFetch((url) => (url.includes("/api/sessions/") ? detailResponse : listResponse));
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.location.hash = "";
 });
 
 describe("App", () => {
@@ -118,23 +120,58 @@ describe("App", () => {
 
   it("一覧を取得して表示する", async () => {
     render(<App />);
-    const card = await screen.findByRole("button", { name: /cinch/ });
+    const card = await screen.findByRole("link", { name: /cinch/ });
     expect(within(card).getByText("64")).toBeInTheDocument();
   });
 
-  it("行をクリックすると詳細を取得して表示する", async () => {
+  it("カードのリンクを開くと詳細を取得して表示する", async () => {
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: /cinch/ }));
+    await userEvent.click(await screen.findByRole("link", { name: /cinch/ }));
+    expect(await screen.findByText(/47 回中 12 回が失敗/)).toBeInTheDocument();
+    expect(window.location.hash).toBe("#/session/s1");
+  });
+
+  it("#/session/<id> で始めると詳細をそのまま復元する（リロード相当）", async () => {
+    window.location.hash = "#/session/s1";
+    render(<App />);
     expect(await screen.findByText(/47 回中 12 回が失敗/)).toBeInTheDocument();
   });
 
   it("詳細から一覧に戻れる", async () => {
     render(<App />);
-    await userEvent.click(await screen.findByRole("button", { name: /cinch/ }));
-    await userEvent.click(await screen.findByRole("button", { name: /一覧に戻る/ }));
+    await userEvent.click(await screen.findByRole("link", { name: /cinch/ }));
+    await screen.findByText(/47 回中 12 回が失敗/);
+    await userEvent.click(await screen.findByRole("link", { name: /一覧に戻る/ }));
     await waitFor(() => {
       expect(screen.getByText("主な減点")).toBeInTheDocument();
     });
+  });
+
+  it("ブラウザバック（hash を空に戻す）で一覧に戻る", async () => {
+    window.location.hash = "#/session/s1";
+    render(<App />);
+    await screen.findByText(/47 回中 12 回が失敗/);
+    window.location.hash = "";
+    await waitFor(() => {
+      expect(screen.getByText("主な減点")).toBeInTheDocument();
+    });
+  });
+
+  it("存在しない sessionId の詳細では 404 表示と一覧に戻る導線を出す", async () => {
+    mockFetch(
+      (url) =>
+        url.includes("/api/sessions/")
+          ? { error: "セッションが見つかりません" }
+          : listResponse,
+      false,
+    );
+    window.location.hash = "#/session/missing";
+    render(<App />);
+    expect(await screen.findByText(/セッションが見つかりません/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /一覧に戻る/ })).toHaveAttribute(
+      "href",
+      "#/",
+    );
   });
 
   it("再スキャンボタンで一覧を取り直す", async () => {

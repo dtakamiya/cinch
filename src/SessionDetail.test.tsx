@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { SessionDetail } from "./SessionDetail.js";
 import type { SessionDetailResponse } from "../shared/types.js";
 
@@ -94,35 +93,35 @@ function detail(
 
 describe("SessionDetail", () => {
   it("合計スコアを表示する", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     expect(screen.getByText("64")).toBeInTheDocument();
   });
 
   it("カテゴリ別スコアを日本語名と earned / max で表示する", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     expect(screen.getByText("生産性")).toBeInTheDocument();
     expect(screen.getByText("18 / 35")).toBeInTheDocument();
   });
 
   it("ルール名を日本語で表示する", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     expect(screen.getByText("ツールエラー率")).toBeInTheDocument();
     expect(screen.getByText("冗長なファイル読み込み")).toBeInTheDocument();
   });
 
   it("evidence を表示する", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     expect(screen.getByText(/47 回中 12 回が失敗/)).toBeInTheDocument();
   });
 
   it("advice がある行だけ改善案を表示する", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     expect(screen.getByText(/Bash の引数を実行前に確認/)).toBeInTheDocument();
     expect(screen.getAllByText(/^→/)).toHaveLength(2);
   });
 
   it("満点のルールに ✓、減点のあるルールに ✗ アイコンを付ける", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     const marks = screen.getAllByTestId("rule-mark");
     const ok = marks.filter((m) => m.getAttribute("data-ok") === "true");
     const ng = marks.filter((m) => m.getAttribute("data-ok") === "false");
@@ -131,13 +130,13 @@ describe("SessionDetail", () => {
   });
 
   it("減点のあるルールを先に並べる", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     const labels = screen.getAllByTestId("rule-label").map((el) => el.textContent);
     expect(labels[labels.length - 1]).toBe("ツール呼び出しの並列化");
   });
 
   it("メタ情報（ターン数・所要時間・モデル・バージョン）を表示する", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     expect(screen.getByText(/38/)).toBeInTheDocument();
     expect(screen.getByText(/30分/)).toBeInTheDocument();
     expect(screen.getByText(/claude-opus-5/)).toBeInTheDocument();
@@ -145,20 +144,21 @@ describe("SessionDetail", () => {
   });
 
   it("parseErrors があれば件数を表示する", () => {
-    render(<SessionDetail data={detail()} onBack={() => {}} />);
+    render(<SessionDetail data={detail()} />);
     expect(screen.getByText(/3 行/)).toBeInTheDocument();
   });
 
-  it("戻るボタンで onBack が呼ばれる", async () => {
-    const onBack = vi.fn();
-    render(<SessionDetail data={detail()} onBack={onBack} />);
-    await userEvent.click(screen.getByRole("button", { name: /一覧に戻る/ }));
-    expect(onBack).toHaveBeenCalled();
+  it("「一覧に戻る」が一覧への hash リンクになっている", () => {
+    render(<SessionDetail data={detail()} />);
+    expect(screen.getByRole("link", { name: /一覧に戻る/ })).toHaveAttribute(
+      "href",
+      "#/",
+    );
   });
 
   it("gradable: false なら採点対象外の説明を出しルール一覧を出さない", () => {
     const data = detail({ gradable: false, total: 0, rules: [] });
-    render(<SessionDetail data={data} onBack={() => {}} />);
+    render(<SessionDetail data={data} />);
     expect(screen.getAllByText(/採点対象外/).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("rule-label")).toBeNull();
   });

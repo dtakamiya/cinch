@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { SessionList, filterAndSort } from "./SessionList.js";
 import type { SessionSummary, SessionsResponse } from "../shared/types.js";
 
@@ -85,16 +84,16 @@ describe("filterAndSort", () => {
 
 describe("SessionList", () => {
   it("セッションを行として表示する", () => {
-    render(<SessionList data={response([summary()])} onSelect={() => {}} />);
-    // カード全体が button。アクセシブルネームにプロジェクト名を含む。
-    const card = screen.getByRole("button", { name: /cinch/ });
+    render(<SessionList data={response([summary()])} />);
+    // カード全体がリンク。アクセシブルネームにプロジェクト名を含む。
+    const card = screen.getByRole("link", { name: /cinch/ });
     expect(card).toBeInTheDocument();
     expect(within(card).getByText("71")).toBeInTheDocument();
     expect(within(card).getByText("38 ターン")).toBeInTheDocument();
   });
 
   it("主な減点をルールの日本語名で表示する", () => {
-    render(<SessionList data={response([summary()])} onSelect={() => {}} />);
+    render(<SessionList data={response([summary()])} />);
     expect(screen.getByText("ツールエラー率")).toBeInTheDocument();
   });
 
@@ -102,7 +101,6 @@ describe("SessionList", () => {
     render(
       <SessionList
         data={response([summary({ total: 100, topDeduction: null })])}
-        onSelect={() => {}}
       />,
     );
     expect(screen.getByText("—")).toBeInTheDocument();
@@ -116,29 +114,34 @@ describe("SessionList", () => {
           summary({ sessionId: "b", total: 80 }),
           summary({ sessionId: "c", gradable: false, total: 0 }),
         ])}
-        onSelect={() => {}}
       />,
     );
     expect(screen.getByText("70")).toBeInTheDocument();
     expect(screen.getByText(/件 \/ 全3件/)).toBeInTheDocument();
   });
 
-  it("行をクリックすると onSelect が sessionId 付きで呼ばれる", async () => {
-    const onSelect = vi.fn();
-    render(<SessionList data={response([summary({ sessionId: "abc" })])} onSelect={onSelect} />);
-
-    await userEvent.click(screen.getByRole("button", { name: /cinch/ }));
-    expect(onSelect).toHaveBeenCalledWith("abc");
+  it("採点済みカードは詳細への hash リンクになる", () => {
+    render(<SessionList data={response([summary({ sessionId: "a/b c" })])} />);
+    const card = screen.getByRole("link", { name: /cinch/ });
+    expect(card).toHaveAttribute("href", "#/session/a%2Fb%20c");
   });
 
   it("採点対象外のセッションはスコアの代わりに — を出す", () => {
     render(
       <SessionList
         data={response([summary({ gradable: false, total: 0, topDeduction: null })])}
-        onSelect={() => {}}
       />,
     );
     expect(screen.getByText("採点対象外")).toBeInTheDocument();
+  });
+
+  it("採点対象外のセッションはリンクにしない", () => {
+    render(
+      <SessionList
+        data={response([summary({ gradable: false, total: 0, topDeduction: null })])}
+      />,
+    );
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("skipped があれば件数を表示する", () => {
@@ -147,14 +150,14 @@ describe("SessionList", () => {
       { path: "/a.jsonl", reason: "ファイルが空です" },
       { path: "/b.jsonl", reason: "読めません" },
     ];
-    render(<SessionList data={data} onSelect={() => {}} />);
+    render(<SessionList data={data} />);
     expect(screen.getByText(/2 件のファイルを読み飛ばしました/)).toBeInTheDocument();
   });
 
   it("message があれば表示する（ログが 1 件も無い場合）", () => {
     const data = response([]);
     data.message = "セッションログのディレクトリが見つかりません。";
-    render(<SessionList data={data} onSelect={() => {}} />);
+    render(<SessionList data={data} />);
     expect(screen.getByText(/見つかりません/)).toBeInTheDocument();
   });
 });

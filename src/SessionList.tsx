@@ -54,13 +54,7 @@ export function filterAndSort(
   });
 }
 
-export function SessionList({
-  data,
-  onSelect,
-}: {
-  data: SessionsResponse;
-  onSelect: (sessionId: string) => void;
-}) {
+export function SessionList({ data }: { data: SessionsResponse }) {
   const [filters, setFilters] = useState<Filters>({
     project: "",
     period: "all",
@@ -158,11 +152,10 @@ export function SessionList({
       <div className="session-list">
         {rows.map((s) =>
           s.gradable ? (
-            <button
+            <a
               key={s.sessionId}
-              type="button"
               className="session-card"
-              onClick={() => onSelect(s.sessionId)}
+              href={`#/session/${encodeURIComponent(s.sessionId)}`}
             >
               <ScoreRing total={s.total} />
               <span className="session-card__mid">
@@ -199,7 +192,7 @@ export function SessionList({
                   <IconChevronRight />
                 </span>
               </span>
-            </button>
+            </a>
           ) : (
             <div
               key={s.sessionId}
