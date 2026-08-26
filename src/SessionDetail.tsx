@@ -13,6 +13,8 @@ import { toNextActionView } from "./deduction.js";
 
 export function SessionDetail({ data }: { data: SessionDetailResponse }) {
   const { metrics, score } = data;
+  // score.rules は server/score.ts が失点降順を保証（cinch-015）。
+  // toNextActionView はその先頭を「最大の失点」として使う。
   const nextAction = toNextActionView(score.gradable, score.rules);
   const models = Object.entries(metrics.models)
     .sort((a, b) => b[1] - a[1])

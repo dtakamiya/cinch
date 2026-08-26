@@ -118,6 +118,11 @@ export interface SessionScore {
   total: number;
   gradable: boolean;
   categories: Record<Category, { earned: number; max: number }>;
+  /**
+   * 失点（`max - earned`）の降順でソート済み。`rules[0]` が最も失点の大きいルール。
+   * この順序は `computeScore`（server/score.ts）の契約で、UI が `rules[0]` を
+   * 「最大の失点」として参照している（cinch-015）。
+   */
   rules: EvaluatedRule[];
 }
 

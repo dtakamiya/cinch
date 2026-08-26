@@ -39,6 +39,10 @@ export function toDeductionView(
  * 詳細画面『次に効く改善』ブロック用。失点降順に並んだ score.rules の先頭を、
  * gradable かつ「満点でない」ときだけ表示用データにして返す。
  * 条件を満たさなければ null（ブロックを出さない）。
+ *
+ * `rules[0]` を「最大の失点」として扱う。この降順は server/score.ts の
+ * `computeScore` が保証する契約（SessionScore.rules の JSDoc・score.test.ts の
+ * 不変条件テスト参照。cinch-015）。
  */
 export function toNextActionView(
   gradable: boolean,
@@ -57,6 +61,7 @@ export function toNextActionView(
   body: string;
 } | null {
   if (!gradable) return null;
+  // score.ts が失点降順を保証しているので rules[0] が最大の失点（cinch-015）
   const top = rules[0];
   if (top === undefined) return null;
   if (top.earned >= top.max) return null;

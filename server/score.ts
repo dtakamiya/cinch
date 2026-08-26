@@ -23,6 +23,12 @@ function emptyCategories(): Record<Category, { earned: number; max: number }> {
 /**
  * 全ルールを評価して重み付け合算する。
  * assistantTurns が閾値未満のセッションは採点対象外とし、gradable: false を返す。
+ *
+ * 返り値の `rules` は**失点（`max - earned`）の降順でソート済み**であることを保証する。
+ * これはドキュメント上の契約であり、UI（src/SessionList.tsx の「主な減点」列、
+ * src/SessionDetail.tsx の『次に効く改善』ブロック、src/deduction.ts の
+ * `toNextActionView`）が `rules[0]` を「失点が最大のルール」として直接参照している。
+ * ソート順を変える場合はこれらの呼び出し側も併せて見直すこと（cinch-015）。
  */
 export function computeScore(
   m: SessionMetrics,
@@ -61,7 +67,10 @@ export function computeScore(
     });
   }
 
-  // 減点の大きい順に並べる（UI で「直すべきもの」が上に来るように）
+  // 減点の大きい順に並べる（UI で「直すべきもの」が上に来るように）。
+  // この降順は SessionScore.rules の契約であり、UI（SessionList / SessionDetail /
+  // deduction.ts）が rules[0] を「最大の失点」として参照している。順序を変えるときは
+  // 上記の呼び出し側と score.test.ts の不変条件テストを必ず確認すること（cinch-015）。
   evaluated.sort((a, b) => b.max - b.earned - (a.max - a.earned));
 
   const total = round1(

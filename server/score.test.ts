@@ -220,6 +220,30 @@ describe("computeScore — ソートの安定性", () => {
     const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
     expect(s.rules.map((r) => r.id)).toEqual(["deducted", "perfect"]);
   });
+
+  // 不変条件（cinch-015）: computeScore の返り値 rules は失点降順でソート済みであること。
+  // UI（SessionList / SessionDetail / deduction.ts）が rules[0] を「最大の失点」として
+  // 直接参照しているため、score.ts:65 のソート行が壊れたらここで気付けるようにする。
+  it("rules は失点（max - earned）の降順に並ぶ", () => {
+    // 失点がばらける入力（入力順はわざと降順にしない）
+    const rules = [
+      fakeRule("lose3", "cost", 10, 0.7), // 減点 3
+      fakeRule("lose9", "productivity", 12, 0.25), // 減点 9
+      fakeRule("lose0", "practice", 8, 1), // 減点 0
+      fakeRule("lose6", "cost", 10, 0.4), // 減点 6
+      fakeRule("lose1", "productivity", 10, 0.9), // 減点 1
+    ];
+    const s = computeScore(metricsFixture({ assistantTurns: 10 }), rules);
+
+    const lost = s.rules.map((r) => Math.round((r.max - r.earned) * 10) / 10);
+    expect(lost).toEqual([9, 6, 3, 1, 0]);
+    // 隣接ペアが常に lost[i] >= lost[i+1]（不変条件そのもの）
+    for (let i = 0; i < lost.length - 1; i++) {
+      expect(lost[i]!).toBeGreaterThanOrEqual(lost[i + 1]!);
+    }
+    // rules[0] が最大の失点であること（UI が依存している性質）
+    expect(s.rules[0]!.id).toBe("lose9");
+  });
 });
 
 describe("topDeduction", () => {
