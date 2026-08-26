@@ -89,8 +89,8 @@ describe("scoreColor", () => {
 });
 
 describe("RULE_LABELS", () => {
-  it("10 ルール分の日本語名を持つ", () => {
-    expect(Object.keys(RULE_LABELS)).toHaveLength(10);
+  it("12 ルール分の日本語名を持つ", () => {
+    expect(Object.keys(RULE_LABELS)).toHaveLength(12);
   });
 
   it("すべてのルール ID をカバーしている", () => {
@@ -102,9 +102,11 @@ describe("RULE_LABELS", () => {
       "redundant-file-reads",
       "parallel-tool-use",
       "turn-efficiency",
+      "oversized-tool-results",
       "subagent-delegation",
       "context-growth",
       "claude-md-present",
+      "task-planning",
     ];
     for (const id of ids) {
       expect(RULE_LABELS[id]).toBeTruthy();

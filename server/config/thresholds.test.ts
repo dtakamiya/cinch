@@ -7,8 +7,8 @@ describe("WEIGHTS", () => {
     expect(total).toBe(100);
   });
 
-  it("10 ルール分の配点を持つ", () => {
-    expect(Object.keys(WEIGHTS)).toHaveLength(10);
+  it("12 ルール分の配点を持つ", () => {
+    expect(Object.keys(WEIGHTS)).toHaveLength(12);
   });
 
   it("カテゴリごとの小計が 35 / 35 / 30 である", () => {
@@ -20,11 +20,13 @@ describe("WEIGHTS", () => {
       WEIGHTS["tool-error-rate"] +
       WEIGHTS["redundant-file-reads"] +
       WEIGHTS["parallel-tool-use"] +
-      WEIGHTS["turn-efficiency"];
+      WEIGHTS["turn-efficiency"] +
+      WEIGHTS["oversized-tool-results"];
     const practice =
       WEIGHTS["subagent-delegation"] +
       WEIGHTS["context-growth"] +
-      WEIGHTS["claude-md-present"];
+      WEIGHTS["claude-md-present"] +
+      WEIGHTS["task-planning"];
     expect([cost, productivity, practice]).toEqual([35, 35, 30]);
   });
 });

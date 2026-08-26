@@ -6,7 +6,7 @@ describe("subagent-delegation", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(subagentDelegationRule.id).toBe("subagent-delegation");
     expect(subagentDelegationRule.category).toBe("practice");
-    expect(subagentDelegationRule.weight).toBe(12);
+    expect(subagentDelegationRule.weight).toBe(10);
   });
 
   it("大量出力を伴う探索が閾値未満（4 ターン）なら判定せず満点", () => {

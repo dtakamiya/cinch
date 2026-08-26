@@ -6,7 +6,7 @@ describe("parallel-tool-use", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(parallelToolUseRule.id).toBe("parallel-tool-use");
     expect(parallelToolUseRule.category).toBe("productivity");
-    expect(parallelToolUseRule.weight).toBe(8);
+    expect(parallelToolUseRule.weight).toBe(6);
   });
 
   it("並列化の機会が閾値未満（2 回）なら判定せず満点", () => {

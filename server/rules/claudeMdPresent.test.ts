@@ -6,7 +6,7 @@ describe("claude-md-present", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(claudeMdPresentRule.id).toBe("claude-md-present");
     expect(claudeMdPresentRule.category).toBe("practice");
-    expect(claudeMdPresentRule.weight).toBe(8);
+    expect(claudeMdPresentRule.weight).toBe(6);
   });
 
   it("CLAUDE.md があれば満点", () => {

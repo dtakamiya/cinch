@@ -6,7 +6,7 @@ describe("redundant-file-reads", () => {
   it("ID / カテゴリ / 配点を持つ", () => {
     expect(redundantFileReadsRule.id).toBe("redundant-file-reads");
     expect(redundantFileReadsRule.category).toBe("productivity");
-    expect(redundantFileReadsRule.weight).toBe(8);
+    expect(redundantFileReadsRule.weight).toBe(6);
   });
 
   it("0 回（満点閾値ちょうど）で満点", () => {
