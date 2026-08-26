@@ -12,7 +12,7 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.server.json && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
-    "start": "concurrently -n api,web \"tsx server/index.ts\" \"vite\""
+    "start": "concurrently --kill-others-on-fail -n api,web \"tsx server/index.ts\" \"vite\""
   },
   "keywords": [],
   "author": "",
