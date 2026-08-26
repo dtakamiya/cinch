@@ -99,4 +99,41 @@ describe("buildTrend", () => {
     // window=1 なので移動平均 = その点自身
     expect(out.points.map((p) => p.movingAvg)).toEqual([60, 80]);
   });
+
+  it("windowSize が NaN ならデフォルト窓（5）と同じ結果になる", () => {
+    const sessions = [
+      summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 60 }),
+      summary({ sessionId: "b", startedAt: "2026-08-21T00:00:00.000Z", total: 80 }),
+      summary({ sessionId: "c", startedAt: "2026-08-22T00:00:00.000Z", total: 40 }),
+    ];
+    const withNaN = buildTrend(sessions, Number.NaN);
+    const withDefault = buildTrend(sessions);
+    expect(withNaN.points).toEqual(withDefault.points);
+    expect(withNaN.delta).toEqual(withDefault.delta);
+  });
+
+  it("windowSize が Infinity でも例外を投げず movingAvg が有限数になる", () => {
+    const out = buildTrend(
+      [
+        summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 60 }),
+        summary({ sessionId: "b", startedAt: "2026-08-21T00:00:00.000Z", total: 80 }),
+      ],
+      Number.POSITIVE_INFINITY,
+    );
+    for (const p of out.points) {
+      expect(Number.isFinite(p.movingAvg)).toBe(true);
+    }
+  });
+
+  it("windowSize が小数なら切り捨てた整数窓として扱う", () => {
+    const sessions = [
+      summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 60 }),
+      summary({ sessionId: "b", startedAt: "2026-08-21T00:00:00.000Z", total: 80 }),
+      summary({ sessionId: "c", startedAt: "2026-08-22T00:00:00.000Z", total: 40 }),
+    ];
+    // 2.9 → 窓 2。a: 60 / b: (60+80)/2=70 / c: (80+40)/2=60
+    expect(buildTrend(sessions, 2.9).points.map((p) => p.movingAvg)).toEqual(
+      buildTrend(sessions, 2).points.map((p) => p.movingAvg),
+    );
+  });
 });

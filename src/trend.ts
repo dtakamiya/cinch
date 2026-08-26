@@ -21,11 +21,17 @@ export interface Trend {
  * 採点対象外（gradable: false）は推移の対象にしない。
  * 純粋関数。UI を介さずテストできる。
  */
+const DEFAULT_WINDOW = 5;
+
 export function buildTrend(
   sessions: SessionSummary[],
-  windowSize = 5,
+  windowSize: number = DEFAULT_WINDOW,
 ): Trend {
-  const w = Math.max(1, Math.floor(windowSize));
+  // 非有限値（NaN / Infinity）は既定窓に倒す。Math.floor(NaN) が NaN のまま
+  // 後続の slice に渡ると窓幅制御が黙って効かなくなるため、ここで必ず有限化する。
+  const w = Number.isFinite(windowSize)
+    ? Math.max(1, Math.floor(windowSize))
+    : DEFAULT_WINDOW;
 
   const ordered = sessions
     .filter((s) => s.gradable)
