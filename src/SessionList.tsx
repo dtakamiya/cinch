@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { SessionSummary, SessionsResponse } from "../shared/types.js";
 import { ScoreRing } from "./ScoreRing.js";
+import { ScoreTrend } from "./ScoreTrend.js";
 import {
   IconActivity,
   IconArrowRight,
@@ -91,6 +92,16 @@ export function SessionList({ data }: { data: SessionsResponse }) {
     [data.sessions, filters],
   );
 
+  // プロジェクトを選んでいるときは、そのプロジェクトの全セッションを推移に渡す
+  // （期間フィルタで推移が途切れないよう、rows ではなく data.sessions から絞る）
+  const trendSessions = useMemo(
+    () =>
+      filters.project === ""
+        ? []
+        : data.sessions.filter((s) => s.projectName === filters.project),
+    [data.sessions, filters.project],
+  );
+
   const { avg, graded, total } = summarize(rows);
 
   return (
@@ -175,6 +186,10 @@ export function SessionList({ data }: { data: SessionsResponse }) {
           {data.skipped.length} 件のファイルを読み飛ばしました
           {data.skipped[0] !== undefined && `（例: ${data.skipped[0].reason}）`}
         </p>
+      )}
+
+      {filters.project !== "" && (
+        <ScoreTrend sessions={trendSessions} projectName={filters.project} />
       )}
 
       <div className="session-list">
