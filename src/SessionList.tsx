@@ -75,7 +75,7 @@ export function SessionList({ data }: { data: SessionsResponse }) {
   const [filters, setFilters] = useState<Filters>({
     project: "",
     period: "all",
-    sortBy: "score",
+    sortBy: "date",
     showUngraded: false,
   });
 
@@ -158,8 +158,8 @@ export function SessionList({ data }: { data: SessionsResponse }) {
               setFilters({ ...filters, sortBy: e.target.value as Filters["sortBy"] })
             }
           >
-            <option value="score">スコア順</option>
             <option value="date">新しい順</option>
+            <option value="score">スコア順</option>
           </select>
         </label>
         <label className="filter-pill">
