@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import {
   defaultRoot,
   deriveProjectName,
@@ -43,12 +43,16 @@ describe("deriveProjectName", () => {
     expect(deriveProjectName("/Users/x/work/cc/cost/dashboad")).toBe("dashboad");
   });
 
-  it("~/.claude 直下のセッションは ~/.claude と表示する", () => {
-    expect(deriveProjectName("/Users/x/.claude")).toBe("~/.claude");
+  it("homedir 直下の .claude セッションは ~/.claude と表示する", () => {
+    expect(deriveProjectName(join(homedir(), ".claude"))).toBe("~/.claude");
   });
 
-  it("末尾スラッシュ付きの .claude も ~/.claude", () => {
-    expect(deriveProjectName("/Users/x/.claude/")).toBe("~/.claude");
+  it("末尾スラッシュ付きの homedir .claude も ~/.claude", () => {
+    expect(deriveProjectName(join(homedir(), ".claude") + "/")).toBe("~/.claude");
+  });
+
+  it("プロジェクトローカルの .claude は ~/.claude 扱いしない", () => {
+    expect(deriveProjectName("/Users/x/work/proj/.claude")).toBe(".claude");
   });
 
   it("Claude Code の worktree サフィックス（-<6桁hex>）を剥がす", () => {
@@ -59,8 +63,16 @@ describe("deriveProjectName", () => {
     ).toBe("analyze-claude-cookbooks");
   });
 
-  it("最終セグメントが hex そのものなら親ディレクトリ名にフォールバック", () => {
-    expect(deriveProjectName("/Users/x/work/worktrees/f438b8")).toBe("worktrees");
+  it("worktrees 配下で最終セグメントが hex そのものなら親ディレクトリ名にフォールバック", () => {
+    expect(deriveProjectName("/Users/x/work/cc/.claude/worktrees/f438b8")).toBe(
+      "worktrees",
+    );
+  });
+
+  it("たまたま hex 名を持つ実プロジェクト（worktrees 配下でない）はそのまま", () => {
+    expect(deriveProjectName("/Users/x/work/deadbeef")).toBe("deadbeef");
+    expect(deriveProjectName("/Users/x/work/facade")).toBe("facade");
+    expect(deriveProjectName("/Users/x/work/abcdef12")).toBe("abcdef12");
   });
 
   it("hex に見えても 6〜8桁でなければ剥がさない", () => {
@@ -70,13 +82,25 @@ describe("deriveProjectName", () => {
     );
   });
 
+  it("全数字サフィックス（日付断片）は剥がさない", () => {
+    expect(deriveProjectName("/Users/x/work/feature-202608")).toBe(
+      "feature-202608",
+    );
+    expect(deriveProjectName("/Users/x/work/v1-123456")).toBe("v1-123456");
+  });
+
   it("大文字混じりの 16 進もどきは剥がさない（Claude Code は小文字）", () => {
     expect(deriveProjectName("/Users/x/work/feature-ABC123")).toBe(
       "feature-ABC123",
     );
   });
 
-  it("空文字は basename('') と同じく空文字を返す（metrics では resolvedCwd が空にならない）", () => {
+  it("親なしで最終セグメントが hex そのものでも bare hash を返さず placeholder", () => {
+    // 到達経路は narrow だが、bare hash をラベルに出さない
+    expect(deriveProjectName("-f438b8")).toBe("(不明)");
+  });
+
+  it("空文字は空文字を返す（metrics では resolvedCwd が空にならない）", () => {
     expect(deriveProjectName("")).toBe("");
   });
 });

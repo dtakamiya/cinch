@@ -1,7 +1,7 @@
 import { readdir, stat, access } from "node:fs/promises";
 import { constants } from "node:fs";
 import { homedir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import type { SkippedFile } from "../shared/types.js";
 
 export interface DiscoveredFile {
@@ -36,30 +36,40 @@ export function unescapeProjectDir(name: string): string {
   return name.replace(/-/g, "/");
 }
 
-/** Claude Code が git worktree の cwd 重複時に付ける "-<6〜8桁hex>" サフィックス。 */
-const WORKTREE_SUFFIX = /-[0-9a-f]{6,8}$/;
-/** サフィックスを剥がした残りが hex そのもの（＝名前部分が無い）ケースの検出用。 */
+/**
+ * Claude Code が git worktree の cwd 重複時に付ける "-<6〜8桁hex>" サフィックス。
+ * lookahead で hex 文字列に最低 1 つ a-f を要求し、純粋な日付断片（全数字）を除外する。
+ */
+const WORKTREE_SUFFIX = /-(?=[0-9a-f]*[a-f])[0-9a-f]{6,8}$/;
+/** 最終セグメントが hex そのもの（＝名前部分が無い）ケースの検出用。 */
 const BARE_HEX = /^[0-9a-f]{6,8}$/;
 
 /**
  * cwd から一覧表示用のプロジェクト名を導出する（fs に触らない純粋関数）。
  *
  * - `~/.claude` 直下（グローバル設定をいじったセッション）は "~/.claude" と表示する。
+ *   homedir にアンカーし、プロジェクトローカルの `.claude` は対象外。
  * - 最終セグメントから Claude Code が付ける worktree サフィックス（"-<6〜8桁hex>"）を剥がす。
- * - 剥がした結果が空、または hex そのものなら親ディレクトリ名にフォールバックする。
+ * - `~/.claude/worktrees/<hex>` のように最終セグメントが hex そのものなら親ディレクトリ名にフォールバック。
+ * - 剥がした結果が空になる場合も親ディレクトリ名にフォールバック。
  * - それ以外は `basename` と同じ（`cost/dashboad` → `dashboad`）。
  */
 export function deriveProjectName(cwd: string): string {
   const trimmed = cwd.replace(/\/+$/, "");
-  if (trimmed.endsWith("/.claude") || trimmed === ".claude") return "~/.claude";
+  if (trimmed === join(homedir(), ".claude")) return "~/.claude";
 
   const base = basename(trimmed);
   const parentOf = () => {
-    const parent = basename(trimmed.slice(0, trimmed.length - base.length).replace(/\/+$/, ""));
-    return parent !== "" ? parent : base;
+    const parent = basename(dirname(trimmed));
+    // 親が取れない（相対パスで親なし）＝既知の行き止まり。placeholder を返す。
+    return parent !== "" && parent !== "." && parent !== "/" ? parent : "(不明)";
   };
 
-  if (BARE_HEX.test(base)) return parentOf();
+  // worktree 由来の bare hex サフィックスは常に ".../worktrees/<hex>" の形。
+  // たまたま hex 名を持つ実プロジェクト（deadbeef 等）を親名に化けさせない。
+  if (BARE_HEX.test(base) && basename(dirname(trimmed)) === "worktrees") {
+    return parentOf();
+  }
   if (!WORKTREE_SUFFIX.test(base)) return base;
 
   const stripped = base.replace(WORKTREE_SUFFIX, "");
