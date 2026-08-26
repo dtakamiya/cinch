@@ -100,3 +100,19 @@ export function IconX({ size = 16 }: IconProps) {
     </svg>
   );
 }
+
+export function IconTrendUp({ size = 13 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <path d="m6 15 6-6 6 6" />
+    </svg>
+  );
+}
+
+export function IconTrendDown({ size = 13 }: IconProps) {
+  return (
+    <svg {...base(size)} aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
