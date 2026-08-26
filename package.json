@@ -1,11 +1,7 @@
 {
   "name": "cinch",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "description": "ローカルの Claude Code セッションログを解析し、セッション単位で使い方を採点するローカル Web アプリ",
   "scripts": {
     "test": "vitest run",
     "dev:server": "tsx watch server/index.ts",
@@ -14,9 +10,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "start": "concurrently --kill-others-on-fail -n api,web \"tsx server/index.ts\" \"vite\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "claude-code",
+    "session-analysis",
+    "scoring"
+  ],
+  "author": "d.miyataka@gmail.com",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "express": "^5.2.1"
