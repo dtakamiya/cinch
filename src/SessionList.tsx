@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SessionSummary, SessionsResponse } from "../shared/types.js";
 import { ScoreRing } from "./ScoreRing.js";
 import { ScoreTrend } from "./ScoreTrend.js";
 import { CategoryScoreTrends } from "./CategoryScoreTrends.js";
+import { routeToHash } from "./route.js";
 import {
   IconActivity,
   IconArrowRight,
@@ -72,13 +73,40 @@ export function summarize(rows: SessionSummary[]): {
   return { avg, graded: gradable.length, total: rows.length };
 }
 
-export function SessionList({ data }: { data: SessionsResponse }) {
+export function SessionList({
+  data,
+  initialProject = "",
+}: {
+  data: SessionsResponse;
+  /** URL(hash) から復元したプロジェクト絞り込み（cinch-016 AC10）。 */
+  initialProject?: string;
+}) {
   const [filters, setFilters] = useState<Filters>({
-    project: "",
+    project: initialProject,
     period: "all",
     sortBy: "date",
     showUngraded: false,
   });
+
+  // プロジェクト絞り込みを URL(hash) に同期する（AC10）。
+  // 初回は初期値と一致するので書き込まない。以後、変更があったときだけ hash を書き換える。
+  const lastSyncedProject = useRef(initialProject);
+  useEffect(() => {
+    if (filters.project === lastSyncedProject.current) return;
+    lastSyncedProject.current = filters.project;
+    const nextHash = routeToHash({ name: "list", project: filters.project });
+    if (window.location.hash !== nextHash) {
+      window.location.hash = nextHash;
+    }
+  }, [filters.project]);
+
+  // 外側（戻る/進む・ベンチマークからの遷移）で initialProject が変わったら追従する。
+  useEffect(() => {
+    lastSyncedProject.current = initialProject;
+    setFilters((f) =>
+      f.project === initialProject ? f : { ...f, project: initialProject },
+    );
+  }, [initialProject]);
 
   const projects = useMemo(
     () =>

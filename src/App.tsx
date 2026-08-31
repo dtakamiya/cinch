@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionDetailResponse, SessionsResponse } from "../shared/types.js";
 import { fetchSessionDetail, fetchSessions } from "./api.js";
 import { IconLogo, IconRefresh } from "./icons.js";
-import { parseRoute, type Route } from "./route.js";
+import { parseRoute, routeToHash, type Route } from "./route.js";
+import { BenchmarkView } from "./BenchmarkView.js";
 import { SessionDetail } from "./SessionDetail.js";
 import { SessionList } from "./SessionList.js";
 
@@ -54,11 +55,13 @@ export function App() {
     void loadList();
   }, [loadList]);
 
+  // 一覧・ベンチマークは同じ GET /api/sessions を使う。未取得なら取得する。
+  const needsList = route.name === "list" || route.name === "benchmark";
   useEffect(() => {
-    if (route.name === "list" && list === null) {
+    if (needsList && list === null) {
       void loadList();
     }
-  }, [route.name, list, loadList]);
+  }, [needsList, list, loadList]);
 
   // 一覧表示中は一定間隔で静かに再スキャンする。タブが非表示の間は止め、
   // 再表示されたタイミングで 1 回取り直す。
@@ -158,6 +161,19 @@ export function App() {
               自動更新
             </label>
           )}
+          {route.name === "list" && (
+            <a
+              className="link"
+              href={routeToHash({ name: "benchmark" })}
+            >
+              ベンチマーク
+            </a>
+          )}
+          {route.name === "benchmark" && (
+            <a className="link" href={routeToHash({ name: "list" })}>
+              一覧
+            </a>
+          )}
           <button type="button" className="link" onClick={rescan}>
             <IconRefresh />
             再スキャン
@@ -179,9 +195,15 @@ export function App() {
       )}
       {loading && <p className="notice">読み込み中…</p>}
 
-      {route.name === "detail"
-        ? detail !== null && <SessionDetail data={detail} />
-        : list !== null && <SessionList data={list} />}
+      {route.name === "detail" ? (
+        detail !== null && <SessionDetail data={detail} />
+      ) : route.name === "benchmark" ? (
+        list !== null && <BenchmarkView data={list} />
+      ) : (
+        list !== null && (
+          <SessionList data={list} initialProject={route.project ?? ""} />
+        )
+      )}
     </div>
   );
 }
