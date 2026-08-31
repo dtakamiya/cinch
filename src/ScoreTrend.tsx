@@ -12,14 +12,23 @@ import { IconTrendDown, IconTrendUp } from "./icons.js";
 export function ScoreTrend({
   sessions,
   projectName,
+  maxScale = 100,
 }: {
   sessions: SessionSummary[];
   projectName: string;
+  /**
+   * SVG の Y 軸上限。既定 100（総合スコア推移）。
+   * cinch-015(b) の 0〜1 獲得率スパークラインでは maxScale={1} を渡してそのまま流用する。
+   */
+  maxScale?: number;
 }) {
   const trend = useMemo(() => buildTrend(sessions), [sessions]);
   const { points, delta } = trend;
 
   if (points.length < 2) return null;
+
+  // 0 や負値・非有限が来ても割り算が壊れないよう下限を張る
+  const scaleMax = Number.isFinite(maxScale) && maxScale > 0 ? maxScale : 100;
 
   // viewBox 座標系（レスポンシブは CSS 側で width:100% にして拡縮）
   const W = 640;
@@ -31,9 +40,12 @@ export function ScoreTrend({
   const n = points.length;
   const x = (i: number) =>
     padX + (i * (W - padX * 2)) / Math.max(1, n - 1);
-  // Y は 0〜100 固定スケール。セッション間の絶対比較ができるように動的スケールにしない。
+  // Y は 0〜maxScale の固定スケール。セッション間の絶対比較ができるように動的スケールにしない。
+  // 上限だけ maxScale prop で差し替え可能（既定 100）。
   const y = (v: number) =>
-    padTop + (1 - Math.min(100, Math.max(0, v)) / 100) * (H - padTop - padBottom);
+    padTop +
+    (1 - Math.min(scaleMax, Math.max(0, v)) / scaleMax) *
+      (H - padTop - padBottom);
 
   const rawPath = points
     .map((p, i) => `${i === 0 ? "M" : "L"} ${x(i).toFixed(1)} ${y(p.total).toFixed(1)}`)
@@ -91,8 +103,8 @@ export function ScoreTrend({
         role="img"
         aria-hidden="true"
       >
-        {/* 目盛り: 0 / 50 / 100 */}
-        {[0, 50, 100].map((v) => (
+        {/* 目盛り: 0 / 中間 / 上限 */}
+        {[0, scaleMax / 2, scaleMax].map((v) => (
           <g key={v}>
             <line
               x1={padX}
@@ -108,7 +120,7 @@ export function ScoreTrend({
               fontSize={10}
               fill="var(--faint)"
             >
-              {v}
+              {formatScore(v)}
             </text>
           </g>
         ))}
