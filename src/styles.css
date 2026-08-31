@@ -510,6 +510,9 @@ body {
 }
 
 .cat-spark__foot-sub {
+  color: var(--faint);
+}
+
 /* ---------- プロジェクト横断ベンチマーク（cinch-016） ---------- */
 
 .benchmark__head {
