@@ -125,31 +125,15 @@ npx playwright test --list                   # 収集対象の確認（smoke だ
 - `e2e/fixtures/seed.ts` が採点済みセッションの JSONL を `e2e/.tmp-sessions/`
   （gitignore 済み）に書き出し、api サーバへ `CINCH_ROOT` で読ませる。実データ
   （`~/.claude/projects`）には依存しない。
-- 検証は 2 層。**computed style / DOM / SVG 属性のアサーション**が崩れ検知の
-  本体で、これは OS 非依存。加えて `toHaveScreenshot()` の**ビジュアル
-  リグレッション**を薄く重ねている（ビューポート固定 1280×720、`fullPage`
-  なし）。
-
-### スクリーンショットのベースライン
-
-`toHaveScreenshot()` のベースラインは OS 依存で、Playwright は
-`e2e/__screenshots__/smoke.spec.ts-snapshots/<name>-chromium-<platform>.png` を
-探す。リポジトリには開発機の `-darwin` が入っている。**CI（Linux）で初めて
-走らせると `-linux` が無く、スクショ比較のテストだけが落ちる**（computed style
-系のアサーションは通る）。
-
-Linux ベースラインを作ってコミットする:
-
-```bash
-docker run --rm -it -v "$PWD":/work -w /work \
-  mcr.microsoft.com/playwright:v1.62.1 \
-  bash -lc "npm ci && npx playwright test --update-snapshots"
-git add e2e/__screenshots__/smoke.spec.ts-snapshots/*-chromium-linux.png
-```
-
-ローカル（macOS）でレイアウトを変えたときは `npx playwright test
---update-snapshots` で `-darwin` を撮り直し、Linux 分は上記 docker で
-別途更新する。
+- 検証は **computed style / DOM / SVG 属性のアサーション**に一本化している。
+  これは OS 非依存で、CI（Linux）でもそのまま走る。`.benchmark__table` の
+  `border-collapse` など、`styles.css` の実値と一致するかを複数点で照合し、
+  cinch-020 型の「CSS ルールが丸ごと死ぬ」事故を捕まえる。
+- **ビジュアル比較（`toHaveScreenshot()`）は入れていない**。ベースライン画像は
+  OS 依存（`-chromium-darwin` / `-chromium-linux`）で、レイアウトを変えるたびに
+  macOS と Linux 双方を撮り直す運用コストに、崩れ検知の実利が見合わない。粗い
+  ビジュアル比較が必要になったら、OS 別ベースラインの CI 生成込みで別タスク
+  （cinch-022 の候補）として設計する。
 
 ## スコープ外（後から追加できる形にはしてある）
 

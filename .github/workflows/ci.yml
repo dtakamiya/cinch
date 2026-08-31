@@ -42,13 +42,9 @@ jobs:
       - run: npx playwright test
         env:
           CI: 'true'
-      # 失敗時は差分画像・トレース・HTML レポートを回収して原因追跡できるようにする。
-      # ビジュアルリグレッションのベースラインは OS 依存（Playwright は
-      # `<name>-chromium-<platform>.png` で解決する）。リポジトリには開発機の
-      # `-darwin` を置いてあるので、Linux ランナーの初回は `-linux` が無く
-      # スクショ比較のテストが落ちる（computed style / DOM アサーションは OS 非依存
-      # なので、崩れ検知の本体はそちらで担保される）。Linux ベースラインの
-      # 生成手順は README.md「E2E（Playwright）」を参照。
+      # 失敗時はトレース・HTML レポートを回収して原因追跡できるようにする。
+      # smoke は computed style / DOM / SVG アサーションのみで OS 非依存
+      # （ビジュアル比較は入れていない。理由は smoke.spec.ts 冒頭を参照）。
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:

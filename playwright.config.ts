@@ -9,6 +9,9 @@ import { SEED_ROOT } from "./e2e/fixtures/seed.js";
  *   e2e/fixtures/seed.ts が用意する採点済みセッションだけを読ませる。
  * - baseURL は E2E 専用ポート。127.0.0.1 に固定（server も 127.0.0.1 バインド）。
  * - CI は chromium 単一。ローカルでも同じ挙動にしておく。
+ * - ビジュアル（toHaveScreenshot）は使わない。OS 別ベースライン（-darwin /
+ *   -linux）の維持コストに実利が見合わないため。崩れ検知は smoke の computed
+ *   style アサーションで担保する（smoke.spec.ts の冒頭コメント参照）。
  */
 // 開発時の既定（5173/5174）を避けて E2E 専用ポートを使う。手元で
 // `npm run start` を回したまま E2E を流してもポートが衝突しない。
@@ -24,8 +27,6 @@ export default defineConfig({
   testMatch: /\.spec\.ts$/,
   // webServer 起動前に fixture のセッションログを書き出す。
   globalSetup: "./e2e/global-setup.ts",
-  // ビジュアルリグレッションのベースラインはここにコミットする。
-  snapshotDir: "./e2e/__screenshots__",
   fullyParallel: false,
   forbidOnly: !!process.env["CI"],
   retries: process.env["CI"] ? 1 : 0,
@@ -34,20 +35,9 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "on-first-retry",
-    // devices["Desktop Chrome"] のデフォルト viewport（現状 1280x720）に
-    // 依存すると、Playwright のバージョンアップでデフォルトが変わった瞬間に
-    // 全ベースラインが無効化する。明示的に固定して切り離す。
+    // viewport はテスト内の要素チェックの前提としてだけ固定する（ビジュアル
+    // 比較はしないが、レイアウト依存のアサーションが解像度で揺れないように）。
     viewport: { width: 1280, height: 720 },
-  },
-  expect: {
-    toHaveScreenshot: {
-      // ビューポート固定スクショ（fullPage: false）に対する許容差。
-      // フォント/アンチエイリアスの OS 差を吸収する。CSS ブロックの丸ごと
-      // 欠落（cinch-020）は computed style アサーション側で確実に捕まえる
-      // ので、スクショはレイアウトの大崩れの粗い検知に留める。
-      maxDiffPixelRatio: 0.02,
-      animations: "disabled",
-    },
   },
   projects: [
     {

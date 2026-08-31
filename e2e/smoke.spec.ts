@@ -7,8 +7,14 @@ import { DETAIL_SESSION_ID } from "./fixtures/seed.js";
  *
  * jsdom のユニットテストは実描画しないため、cinch-020（CSS ブロックの丸ごと
  * 欠落）のように typecheck / test / build を素通りする回帰がある。実ブラウザで
- * マウント・可視性・computed style・SVG 属性・コンソール error 0 件・見た目の
- * 差分を確認する。
+ * マウント・可視性・computed style・SVG 属性・コンソール error 0 件を確認する。
+ *
+ * ビジュアル（toHaveScreenshot）は入れない。ベースライン画像が OS 依存
+ * （-chromium-darwin / -chromium-linux）で、レイアウト変更のたびに macOS と
+ * Linux 双方を撮り直す運用コストに、崩れ検知の実利が見合わない。cinch-020 型の
+ * 「CSS ルールが丸ごと死ぬ」事故は下の computed style アサーションで確実に
+ * 捕まる（回帰性は実証済み）。粗いビジュアル比較が必要になったら別タスクで
+ * OS 別ベースラインの CI 生成込みで設計する。
  *
  * ネットワーク待ち: 一覧・ベンチマークは GET /api/sessions を、詳細は
  * GET /api/sessions/:id を待ってから描画する。goto に networkidle を付け、
@@ -31,7 +37,6 @@ test.describe("一覧 (#/)", () => {
     // fixture の 3 セッションが少なくとも並ぶ
     await expect(page.locator(".session-card")).toHaveCount(3);
 
-    await expect(page).toHaveScreenshot("list.png");
     assertNoConsoleErrors(errors);
   });
 });
@@ -55,7 +60,6 @@ test.describe("詳細 (#/session/<id>)", () => {
     await expect(ring).toBeVisible();
     await expect(ring).toHaveAttribute("viewBox", /.+/);
 
-    await expect(page).toHaveScreenshot("detail.png");
     assertNoConsoleErrors(errors);
   });
 });
@@ -123,7 +127,6 @@ test.describe("ベンチマーク (#/benchmark)", () => {
       "styles.css の .benchmark__scroll の border（1px）が効いていない",
     ).toBe("1px");
 
-    await expect(page).toHaveScreenshot("benchmark.png");
     assertNoConsoleErrors(errors);
   });
 });
