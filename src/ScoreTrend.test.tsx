@@ -170,4 +170,55 @@ describe("ScoreTrend", () => {
     );
     expect(container.firstChild).toBeNull();
   });
+
+  it("maxScale 既定（100）では目盛りラベルが 0 / 50 / 100 のまま（非回帰）", () => {
+    const { container } = render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 60 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 80 }),
+        ]}
+        projectName="cinch"
+      />,
+    );
+    const texts = [...container.querySelectorAll("svg text")].map(
+      (t) => t.textContent,
+    );
+    expect(texts).toEqual(["0", "50", "100"]);
+  });
+
+  it("maxScale を渡すと Y 軸上限が変わる（(b) の獲得率スパークライン流用想定）", () => {
+    // maxScale=1 のとき目盛りは 0 / 0.5 / 1。total=1 が上端に張り付く。
+    const { container } = render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 0 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 1 }),
+        ]}
+        projectName="cinch"
+        maxScale={1}
+      />,
+    );
+    const texts = [...container.querySelectorAll("svg text")].map(
+      (t) => t.textContent,
+    );
+    expect(texts).toEqual(["0", "0.5", "1"]);
+  });
+
+  it("maxScale が 0 以下・非有限なら 100 にフォールバックする", () => {
+    const { container } = render(
+      <ScoreTrend
+        sessions={[
+          summary({ sessionId: "a", startedAt: "2026-08-20T00:00:00.000Z", total: 60 }),
+          summary({ sessionId: "b", startedAt: "2026-08-25T00:00:00.000Z", total: 80 }),
+        ]}
+        projectName="cinch"
+        maxScale={0}
+      />,
+    );
+    const texts = [...container.querySelectorAll("svg text")].map(
+      (t) => t.textContent,
+    );
+    expect(texts).toEqual(["0", "50", "100"]);
+  });
 });

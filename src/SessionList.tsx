@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { SessionSummary, SessionsResponse } from "../shared/types.js";
 import { ScoreRing } from "./ScoreRing.js";
 import { ScoreTrend } from "./ScoreTrend.js";
+import { CategoryScoreTrends } from "./CategoryScoreTrends.js";
 import {
   IconActivity,
   IconArrowRight,
@@ -189,7 +190,13 @@ export function SessionList({ data }: { data: SessionsResponse }) {
       )}
 
       {filters.project !== "" && (
-        <ScoreTrend sessions={trendSessions} projectName={filters.project} />
+        <>
+          <ScoreTrend sessions={trendSessions} projectName={filters.project} />
+          <CategoryScoreTrends
+            sessions={trendSessions}
+            projectName={filters.project}
+          />
+        </>
       )}
 
       <div className="session-list">

@@ -408,6 +408,111 @@ body {
   background: var(--border);
 }
 
+/* ---------- カテゴリ別 獲得率推移（cinch-015a） ---------- */
+
+.cat-trend {
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+.cat-trend__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cat-trend__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.cat-trend__sub {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.cat-trend__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .cat-trend__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cat-spark {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+.cat-spark__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.cat-spark__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.cat-spark__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cat-spark__delta-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cat-spark__delta--up {
+  color: var(--good);
+}
+
+.cat-spark__delta--down {
+  color: var(--bad);
+}
+
+.cat-spark__delta--flat {
+  color: var(--faint);
+}
+
+.cat-spark__svg {
+  display: block;
+  width: 100%;
+  height: 64px;
+}
+
+.cat-spark__foot {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cat-spark__foot-sub {
+  color: var(--faint);
+}
+
 /* ---------- 通知・エラー ---------- */
 
 .summary-line {
