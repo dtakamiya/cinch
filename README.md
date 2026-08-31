@@ -104,7 +104,36 @@ discover.ts  →  parse.ts  →  metrics.ts  →  rules/*.ts  →  score.ts  →
 npm test          # Vitest
 npm run typecheck # tsc --noEmit（フロント・サーバ両方）
 npm run build     # 型チェック + Vite ビルド
+npm run test:e2e  # Playwright（実ブラウザでの描画確認）
 ```
+
+## E2E（Playwright）
+
+`npm test`（Vitest / jsdom）は実描画しないため、CSS ブロックが丸ごと無効化される
+たぐいの事故（例: cinch-020）を素通りさせる。それを実ブラウザ（chromium）で
+捕まえるのが `e2e/` の smoke。
+
+```bash
+npx playwright install --with-deps chromium  # 初回のみ
+npm run test:e2e                             # = playwright test
+npx playwright test --list                   # 収集対象の確認（smoke だけが出る）
+```
+
+- `playwright.config.ts` の `webServer` が `npm run start:e2e` で api + vite を
+  E2E 専用ポート（web 5273 / api 5274）に起動する。開発用の `npm start`
+  （5173 / 5174）と衝突しない。
+- `e2e/fixtures/seed.ts` が採点済みセッションの JSONL を `e2e/.tmp-sessions/`
+  （gitignore 済み）に書き出し、api サーバへ `CINCH_ROOT` で読ませる。実データ
+  （`~/.claude/projects`）には依存しない。
+- 検証は **computed style / DOM / SVG 属性のアサーション**に一本化している。
+  これは OS 非依存で、CI（Linux）でもそのまま走る。`.benchmark__table` の
+  `border-collapse` など、`styles.css` の実値と一致するかを複数点で照合し、
+  cinch-020 型の「CSS ルールが丸ごと死ぬ」事故を捕まえる。
+- **ビジュアル比較（`toHaveScreenshot()`）は入れていない**。ベースライン画像は
+  OS 依存（`-chromium-darwin` / `-chromium-linux`）で、レイアウトを変えるたびに
+  macOS と Linux 双方を撮り直す運用コストに、崩れ検知の実利が見合わない。粗い
+  ビジュアル比較が必要になったら、OS 別ベースラインの CI 生成込みで別タスク
+  （cinch-022 の候補）として設計する。
 
 ## スコープ外（後から追加できる形にはしてある）
 

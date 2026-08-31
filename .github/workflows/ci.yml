@@ -19,3 +19,37 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  e2e:
+    # 実ブラウザでの描画確認（cinch-021）。jsdom を素通りする CSS 事故
+    # （cinch-020 の .benchmark__* 全滅など）をブロッキングゲートで捕まえる。
+    # typecheck / test / build とは独立に走らせる。
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # 収集対象の可視化。ここに vitest の *.test.ts が混ざっていたら
+      # testMatch / testDir の設定ミス。将来の収集ミスをこの step で早期に気づく。
+      # 期待: e2e/smoke.spec.ts の smoke だけが列挙される。
+      - run: npx playwright test --list
+        env:
+          CI: 'true'
+      - run: npx playwright test
+        env:
+          CI: 'true'
+      # 失敗時はトレース・HTML レポートを回収して原因追跡できるようにする。
+      # smoke は computed style / DOM / SVG アサーションのみで OS 非依存
+      # （ビジュアル比較は入れていない。理由は smoke.spec.ts 冒頭を参照）。
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
