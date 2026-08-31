@@ -510,6 +510,117 @@ body {
 }
 
 .cat-spark__foot-sub {
+/* ---------- プロジェクト横断ベンチマーク（cinch-016） ---------- */
+
+.benchmark__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 8px 0 16px;
+}
+
+.benchmark__title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.benchmark__sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.benchmark__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.benchmark__hint {
+  font-size: 11px;
+  color: var(--faint);
+  margin-left: auto;
+}
+
+.benchmark__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.benchmark__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.benchmark__table th,
+.benchmark__table td {
+  padding: 10px 12px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.benchmark__table thead th {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.benchmark__th--left {
+  text-align: left !important;
+}
+
+.benchmark__row:last-child td {
+  border-bottom: none;
+}
+
+.benchmark__project-link {
+  color: var(--fg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.benchmark__project-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.benchmark__warn {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bad);
+}
+
+.benchmark__muted {
+  color: var(--faint);
+}
+
+.benchmark__box {
+  display: block;
+  width: 120px;
+  height: 20px;
+  margin-left: auto;
+}
+
+.benchmark__deduction {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.benchmark__deduction-count {
+  font-size: 11px;
   color: var(--faint);
 }
 

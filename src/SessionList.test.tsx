@@ -242,4 +242,44 @@ describe("SessionList", () => {
     render(<SessionList data={data} />);
     expect(screen.getByText(/見つかりません/)).toBeInTheDocument();
   });
+
+  it("initialProject を渡すとプロジェクト絞り込みが初期選択される（AC10）", () => {
+    render(
+      <SessionList
+        data={response([
+          summary({ sessionId: "a", projectName: "cinch" }),
+          summary({ sessionId: "b", projectName: "other" }),
+        ])}
+        initialProject="other"
+      />,
+    );
+    const select = screen.getByRole("combobox", { name: /プロジェクト/ });
+    expect((select as HTMLSelectElement).value).toBe("other");
+  });
+
+  it("プロジェクト絞り込みを変えると hash が #/?project=<name> に同期される（AC10）", () => {
+    const prev = window.location.hash;
+    try {
+      render(
+        <SessionList
+          data={response([
+            summary({ sessionId: "a", projectName: "cinch" }),
+            summary({ sessionId: "b", projectName: "other" }),
+          ])}
+        />,
+      );
+      fireEvent.change(screen.getByRole("combobox", { name: /プロジェクト/ }), {
+        target: { value: "other" },
+      });
+      expect(window.location.hash).toBe("#/?project=other");
+
+      // 「すべて」に戻すと hash も素の #/ に戻る
+      fireEvent.change(screen.getByRole("combobox", { name: /プロジェクト/ }), {
+        target: { value: "" },
+      });
+      expect(window.location.hash).toBe("#/");
+    } finally {
+      window.location.hash = prev;
+    }
+  });
 });

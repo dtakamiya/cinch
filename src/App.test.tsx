@@ -137,6 +137,35 @@ describe("App", () => {
     expect(await screen.findByText(/47 回中 12 回が失敗/)).toBeInTheDocument();
   });
 
+  it("ヘッダのベンチマークリンクで #/benchmark に遷移し横断テーブルを出す", async () => {
+    render(<App />);
+    await screen.findByText("cinch");
+    await userEvent.click(screen.getByRole("link", { name: /ベンチマーク/ }));
+    expect(window.location.hash).toBe("#/benchmark");
+    expect(
+      await screen.findByText(/プロジェクト横断ベンチマーク/),
+    ).toBeInTheDocument();
+  });
+
+  it("#/benchmark で始めると同じ GET /api/sessions を使って復元する", async () => {
+    window.location.hash = "#/benchmark";
+    render(<App />);
+    expect(
+      await screen.findByText(/プロジェクト横断ベンチマーク/),
+    ).toBeInTheDocument();
+  });
+
+  it("ベンチマークの行リンクから #/?project=<name> で絞り込み一覧に戻る", async () => {
+    window.location.hash = "#/benchmark";
+    render(<App />);
+    await screen.findByText(/プロジェクト横断ベンチマーク/);
+    await userEvent.click(screen.getByRole("link", { name: "cinch" }));
+    expect(window.location.hash).toBe("#/?project=cinch");
+    // 一覧に戻り、プロジェクト select が cinch に設定されている
+    const select = await screen.findByRole("combobox", { name: /プロジェクト/ });
+    expect((select as HTMLSelectElement).value).toBe("cinch");
+  });
+
   it("詳細から一覧に戻れる", async () => {
     render(<App />);
     await userEvent.click(await screen.findByRole("link", { name: /cinch/ }));
