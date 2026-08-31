@@ -3,6 +3,12 @@ dist/
 .DS_Store
 *.log
 
+# Playwright（レポート・トレース・E2E fixture の一時生成物）
+/playwright-report/
+/test-results/
+/blob-report/
+/e2e/.tmp-sessions/
+
 # ローカル固有の Claude Code 設定
 .claude/settings.local.json
 

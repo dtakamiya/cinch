@@ -104,7 +104,52 @@ discover.ts  →  parse.ts  →  metrics.ts  →  rules/*.ts  →  score.ts  →
 npm test          # Vitest
 npm run typecheck # tsc --noEmit（フロント・サーバ両方）
 npm run build     # 型チェック + Vite ビルド
+npm run test:e2e  # Playwright（実ブラウザでの描画確認）
 ```
+
+## E2E（Playwright）
+
+`npm test`（Vitest / jsdom）は実描画しないため、CSS ブロックが丸ごと無効化される
+たぐいの事故（例: cinch-020）を素通りさせる。それを実ブラウザ（chromium）で
+捕まえるのが `e2e/` の smoke。
+
+```bash
+npx playwright install --with-deps chromium  # 初回のみ
+npm run test:e2e                             # = playwright test
+npx playwright test --list                   # 収集対象の確認（smoke だけが出る）
+```
+
+- `playwright.config.ts` の `webServer` が `npm run start:e2e` で api + vite を
+  E2E 専用ポート（web 5273 / api 5274）に起動する。開発用の `npm start`
+  （5173 / 5174）と衝突しない。
+- `e2e/fixtures/seed.ts` が採点済みセッションの JSONL を `e2e/.tmp-sessions/`
+  （gitignore 済み）に書き出し、api サーバへ `CINCH_ROOT` で読ませる。実データ
+  （`~/.claude/projects`）には依存しない。
+- 検証は 2 層。**computed style / DOM / SVG 属性のアサーション**が崩れ検知の
+  本体で、これは OS 非依存。加えて `toHaveScreenshot()` の**ビジュアル
+  リグレッション**を薄く重ねている（ビューポート固定 1280×720、`fullPage`
+  なし）。
+
+### スクリーンショットのベースライン
+
+`toHaveScreenshot()` のベースラインは OS 依存で、Playwright は
+`e2e/__screenshots__/smoke.spec.ts-snapshots/<name>-chromium-<platform>.png` を
+探す。リポジトリには開発機の `-darwin` が入っている。**CI（Linux）で初めて
+走らせると `-linux` が無く、スクショ比較のテストだけが落ちる**（computed style
+系のアサーションは通る）。
+
+Linux ベースラインを作ってコミットする:
+
+```bash
+docker run --rm -it -v "$PWD":/work -w /work \
+  mcr.microsoft.com/playwright:v1.62.1 \
+  bash -lc "npm ci && npx playwright test --update-snapshots"
+git add e2e/__screenshots__/smoke.spec.ts-snapshots/*-chromium-linux.png
+```
+
+ローカル（macOS）でレイアウトを変えたときは `npx playwright test
+--update-snapshots` で `-darwin` を撮り直し、Linux 分は上記 docker で
+別途更新する。
 
 ## スコープ外（後から追加できる形にはしてある）
 
