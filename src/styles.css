@@ -438,6 +438,13 @@ body {
   white-space: nowrap;
 }
 
+.cat-trend__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .cat-trend__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

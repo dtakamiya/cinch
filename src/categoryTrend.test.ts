@@ -251,4 +251,185 @@ describe("buildCategoryTrends", () => {
     expect(cost.points).toHaveLength(1);
     expect(cost.points[0]!.sessions).toBe(1);
   });
+
+  it("week モードのメタ情報: bucketKind='week' / windowSize=null", () => {
+    const out = buildCategoryTrends(
+      [
+        summary({ sessionId: "w1", startedAt: "2026-08-24T09:00:00.000Z" }),
+        summary({ sessionId: "w2", startedAt: "2026-08-31T09:00:00.000Z" }),
+      ],
+      "cinch",
+    );
+    expect(out.bucketKind).toBe("week");
+    expect(out.windowSize).toBeNull();
+    expect(out.insufficient).toBe(false);
+  });
+
+  it("週バケット時は windowSize を無視する", () => {
+    const list = [
+      summary({ sessionId: "w1", startedAt: "2026-08-24T09:00:00.000Z" }),
+      summary({ sessionId: "w2", startedAt: "2026-08-31T09:00:00.000Z" }),
+    ];
+    const withOpt = buildCategoryTrends(list, "cinch", {
+      bucketKind: "week",
+      windowSize: 3,
+    });
+    const noOpt = buildCategoryTrends(list, "cinch");
+    expect(withOpt).toEqual(noOpt);
+    expect(withOpt.windowSize).toBeNull();
+  });
+});
+
+describe("buildCategoryTrends — session-window バケット", () => {
+  /** 連日 1 件ずつ、開始時刻昇順の gradable セッション列を作る。 */
+  function seq(
+    count: number,
+    catFor?: (i: number) => SessionSummary["categories"],
+  ): SessionSummary[] {
+    return Array.from({ length: count }, (_, i) =>
+      summary({
+        sessionId: `s${i}`,
+        startedAt: new Date(Date.UTC(2026, 0, 1 + i, 12)).toISOString(),
+        ...(catFor ? { categories: catFor(i) } : {}),
+      }),
+    );
+  }
+
+  it("件数が N 未満: current だけで previous が空 → insufficient", () => {
+    const out = buildCategoryTrends(seq(3), "cinch", {
+      bucketKind: "session-window",
+      windowSize: 5,
+    });
+    expect(out.bucketKind).toBe("session-window");
+    expect(out.windowSize).toBe(5);
+    expect(out.insufficient).toBe(true);
+    for (const s of out.series) {
+      expect(s.points).toEqual([]);
+      expect(s.delta).toBe(0);
+    }
+  });
+
+  it("ちょうど N 件: previous が空 → insufficient", () => {
+    const out = buildCategoryTrends(seq(3), "cinch", {
+      bucketKind: "session-window",
+      windowSize: 3,
+    });
+    expect(out.insufficient).toBe(true);
+    expect(out.series[0]!.points).toEqual([]);
+  });
+
+  it("空 previous: sorted.length === N（N=5, 5 件） → insufficient", () => {
+    const out = buildCategoryTrends(seq(5), "cinch", {
+      bucketKind: "session-window",
+      windowSize: 5,
+    });
+    expect(out.insufficient).toBe(true);
+    for (const s of out.series) expect(s.points).toEqual([]);
+  });
+
+  it("N 超: 末尾 N 件を current・その手前 N 件を previous に分割して delta を出す", () => {
+    // 前半 3 件 rate 0.5、後半 3 件 cost=0.8 / productivity=0.2 / practice=0.5、N=3
+    const list = seq(6, (i) =>
+      i < 3
+        ? {
+            cost: { earned: 5, max: 10 },
+            productivity: { earned: 5, max: 10 },
+            practice: { earned: 5, max: 10 },
+          }
+        : {
+            cost: { earned: 8, max: 10 },
+            productivity: { earned: 2, max: 10 },
+            practice: { earned: 5, max: 10 },
+          },
+    );
+    const out = buildCategoryTrends(list, "cinch", {
+      bucketKind: "session-window",
+      windowSize: 3,
+    });
+    expect(out.insufficient).toBe(false);
+    expect(out.windowSize).toBe(3);
+    const cost = out.series.find((s) => s.category === "cost")!;
+    expect(cost.points).toHaveLength(2);
+    expect(cost.points[0]).toMatchObject({
+      weekStart: "previous",
+      earned: 15,
+      max: 30,
+      rate: 0.5,
+      sessions: 3,
+    });
+    expect(cost.points[1]).toMatchObject({
+      weekStart: "current",
+      earned: 24,
+      max: 30,
+      rate: 0.8,
+      sessions: 3,
+    });
+    expect(cost.delta).toBeCloseTo(0.3);
+    expect(
+      out.series.find((s) => s.category === "productivity")!.delta,
+    ).toBeCloseTo(-0.3);
+    expect(out.series.find((s) => s.category === "practice")!.delta).toBe(0);
+  });
+
+  it("N 超（N < 件数 < 2N）: previous は部分的でも非空なら分割する", () => {
+    // 8 件・N=5 → current=末尾5・previous=先頭3
+    const out = buildCategoryTrends(seq(8), "cinch", {
+      bucketKind: "session-window",
+      windowSize: 5,
+    });
+    expect(out.insufficient).toBe(false);
+    const cost = out.series.find((s) => s.category === "cost")!;
+    expect(cost.points[0]!.sessions).toBe(3);
+    expect(cost.points[1]!.sessions).toBe(5);
+  });
+
+  it("windowSize 省略時は 5 が既定", () => {
+    const out = buildCategoryTrends(seq(10), "cinch", {
+      bucketKind: "session-window",
+    });
+    expect(out.windowSize).toBe(5);
+    expect(out.insufficient).toBe(false);
+    const cost = out.series.find((s) => s.category === "cost")!;
+    expect(cost.points[0]!.sessions).toBe(5);
+    expect(cost.points[1]!.sessions).toBe(5);
+  });
+
+  it("入力順に依存せず startedAt 昇順で窓を切る", () => {
+    const list = seq(6, (i) =>
+      i < 3
+        ? {
+            cost: { earned: 5, max: 10 },
+            productivity: { earned: 5, max: 10 },
+            practice: { earned: 5, max: 10 },
+          }
+        : {
+            cost: { earned: 8, max: 10 },
+            productivity: { earned: 8, max: 10 },
+            practice: { earned: 8, max: 10 },
+          },
+    );
+    const shuffled = [list[4]!, list[0]!, list[5]!, list[2]!, list[1]!, list[3]!];
+    const out = buildCategoryTrends(shuffled, "cinch", {
+      bucketKind: "session-window",
+      windowSize: 3,
+    });
+    const cost = out.series.find((s) => s.category === "cost")!;
+    expect(cost.points[0]!.rate).toBe(0.5); // 先頭 3 件（古い方）
+    expect(cost.points[1]!.rate).toBe(0.8); // 末尾 3 件（新しい方）
+  });
+
+  it("startedAt がパースできないセッションは窓の並びから除外する", () => {
+    const list = [
+      ...seq(6),
+      summary({ sessionId: "bad", startedAt: "not-a-date" }),
+    ];
+    const out = buildCategoryTrends(list, "cinch", {
+      bucketKind: "session-window",
+      windowSize: 3,
+    });
+    expect(out.gradedCount).toBe(7);
+    const cost = out.series.find((s) => s.category === "cost")!;
+    expect(cost.points[0]!.sessions).toBe(3);
+    expect(cost.points[1]!.sessions).toBe(3);
+  });
 });
