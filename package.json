@@ -4,6 +4,7 @@
   "description": "ローカルの Claude Code セッションログを解析し、セッション単位で使い方を採点するローカル Web アプリ",
   "scripts": {
     "test": "vitest run",
+    "threshold-report": "tsx server/scripts/threshold-report.ts",
     "dev:server": "tsx watch server/index.ts",
     "dev": "vite",
     "build": "tsc -p tsconfig.server.json && vite build",
