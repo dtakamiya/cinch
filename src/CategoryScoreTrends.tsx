@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { SessionSummary } from "../shared/types.js";
 import {
   buildCategoryTrends,
@@ -7,6 +7,11 @@ import {
 } from "./categoryTrend.js";
 import { CATEGORY_LABELS } from "./format.js";
 import { IconTrendDown, IconTrendUp } from "./icons.js";
+
+type BucketKind = "week" | "session-window";
+type WindowSize = 3 | 5 | 10;
+
+const WINDOW_SIZES: WindowSize[] = [3, 5, 10];
 
 /**
  * 総合スコア推移（ScoreTrend）の下に置く、カテゴリ別（cost / productivity / practice）の
@@ -26,17 +31,24 @@ export function CategoryScoreTrends({
   sessions: SessionSummary[];
   projectName: string;
 }) {
+  const [bucketKind, setBucketKind] = useState<BucketKind>("week");
+  const [windowSize, setWindowSize] = useState<WindowSize>(5);
+
   const trends = useMemo(
-    () => buildCategoryTrends(sessions, projectName),
-    [sessions, projectName],
+    () => buildCategoryTrends(sessions, projectName, { bucketKind, windowSize }),
+    [sessions, projectName, bucketKind, windowSize],
   );
 
   // 総合推移と同じ「採点済み 2 件未満は出さない」ガード
   if (trends.gradedCount < 2) return null;
 
-  // 週が 1 つしか無い（＝推移として意味がない）ときも出さない
+  // week モードで週が 1 つしか無い（＝推移として意味がない）ときは、
+  // 従来どおりセクションごと出さない（トグルも表示しない）。
   const weekCount = trends.series[0]?.points.length ?? 0;
-  if (weekCount < 2) return null;
+  if (bucketKind === "week" && weekCount < 2) return null;
+
+  const showInsufficient =
+    trends.bucketKind === "session-window" && trends.insufficient;
 
   return (
     <section
@@ -48,15 +60,55 @@ export function CategoryScoreTrends({
           {projectName} のカテゴリ別 獲得率推移
         </span>
         <span className="cat-trend__sub num">
-          {weekCount} 週 ・ 採点済み {trends.gradedCount} 件
+          {bucketKind === "week"
+            ? `${weekCount} 週`
+            : `直近 ${windowSize} 件`}{" "}
+          ・ 採点済み {trends.gradedCount} 件
         </span>
       </div>
 
-      <div className="cat-trend__grid">
-        {trends.series.map((s) => (
-          <CategorySparkline key={s.category} series={s} />
-        ))}
+      <div className="cat-trend__controls">
+        <label className="filter-pill">
+          区切り
+          <select
+            value={bucketKind}
+            onChange={(e) => setBucketKind(e.target.value as BucketKind)}
+          >
+            <option value="week">週</option>
+            <option value="session-window">直近N件</option>
+          </select>
+        </label>
+        {bucketKind === "session-window" && (
+          <label className="filter-pill">
+            件数
+            <select
+              value={windowSize}
+              onChange={(e) =>
+                setWindowSize(Number(e.target.value) as WindowSize)
+              }
+            >
+              {WINDOW_SIZES.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
+
+      {showInsufficient ? (
+        <p className="notice">
+          直近 {windowSize} 件ずつの比較には採点済みセッションが{" "}
+          {windowSize * 2} 件必要です（現在 {trends.gradedCount} 件）。
+        </p>
+      ) : (
+        <div className="cat-trend__grid">
+          {trends.series.map((s) => (
+            <CategorySparkline key={s.category} series={s} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

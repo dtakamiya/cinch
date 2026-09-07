@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { CategoryScoreTrends } from "./CategoryScoreTrends.js";
 import type { SessionSummary } from "../shared/types.js";
 
@@ -93,6 +94,56 @@ describe("CategoryScoreTrends", () => {
     expect(screen.getByText("-40pt")).toBeInTheDocument();
     expect(screen.getByLabelText("上昇")).toBeInTheDocument();
     expect(screen.getByLabelText("下降")).toBeInTheDocument();
+  });
+
+  it("窓トグルで『直近N件』へ切替えると再集計され、見出しが直近件数表記になる", async () => {
+    // 12 週分（週バケットで描画される）→ session-window(既定 5) では前後 5 件ずつに割れる
+    const sessions = Array.from({ length: 12 }, (_, i) =>
+      summary({
+        sessionId: `s${i}`,
+        startedAt: new Date(Date.UTC(2026, 0, 5 + i * 7, 12)).toISOString(),
+      }),
+    );
+    render(<CategoryScoreTrends sessions={sessions} projectName="cinch" />);
+
+    expect(screen.getByText(/12 週 ・ 採点済み 12 件/)).toBeInTheDocument();
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("区切り"),
+      "session-window",
+    );
+
+    expect(screen.getByText(/直近 5 件 ・ 採点済み 12 件/)).toBeInTheDocument();
+    expect(screen.queryByText(/12 週 ・/)).not.toBeInTheDocument();
+    // グリッド（スパークライン）は描画されたまま
+    expect(screen.getByText("コスト効率")).toBeInTheDocument();
+
+    // 件数を 3 に変えると見出しが追従する（12 件あるので分割は成立）
+    await userEvent.selectOptions(screen.getByLabelText("件数"), "3");
+    expect(screen.getByText(/直近 3 件 ・ 採点済み 12 件/)).toBeInTheDocument();
+    expect(screen.getByText("コスト効率")).toBeInTheDocument();
+  });
+
+  it("session-window で件数不足のときはデータ不足メッセージを出す", async () => {
+    // 4 週分 → 週バケットでは描画される。session-window(既定 5) では 4 < 5 で previous 空
+    const sessions = Array.from({ length: 4 }, (_, i) =>
+      summary({
+        sessionId: `s${i}`,
+        startedAt: new Date(Date.UTC(2026, 0, 5 + i * 7, 12)).toISOString(),
+      }),
+    );
+    render(<CategoryScoreTrends sessions={sessions} projectName="cinch" />);
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("区切り"),
+      "session-window",
+    );
+
+    expect(
+      screen.getByText(/採点済みセッションが 10 件必要です（現在 4 件）/),
+    ).toBeInTheDocument();
+    // スパークラインは描画されない
+    expect(screen.queryByText("コスト効率")).not.toBeInTheDocument();
   });
 
   it("gradable:false は 2 件のカウントに入れない（描画されない）", () => {
