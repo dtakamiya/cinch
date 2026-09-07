@@ -35,7 +35,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # 収集対象の可視化。ここに vitest の *.test.ts が混ざっていたら
       # testMatch / testDir の設定ミス。将来の収集ミスをこの step で早期に気づく。
-      # 期待: e2e/smoke.spec.ts の smoke だけが列挙される。
+      # 期待: e2e/*.spec.ts（smoke / filters / trend / empty / not-found /
+      # dark-mode）だけが列挙され、*.test.ts は 1 件も出ない。
       - run: npx playwright test --list
         env:
           CI: 'true'

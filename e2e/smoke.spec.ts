@@ -34,8 +34,9 @@ test.describe("一覧 (#/)", () => {
 
     const list = page.locator(".session-list");
     await expect(list).toBeVisible();
-    // fixture の 3 セッションが少なくとも並ぶ
-    await expect(page.locator(".session-card")).toHaveCount(3);
+    // fixture の採点済みセッション: proj-a / b / c（各 1）＋ trend-proj（4）＝ 7 枚。
+    // 既定フィルタは「採点対象外を表示」オフなので採点済みだけが並ぶ。
+    await expect(page.locator(".session-card")).toHaveCount(7);
 
     assertNoConsoleErrors(errors);
   });
@@ -72,8 +73,9 @@ test.describe("ベンチマーク (#/benchmark)", () => {
 
     const table = page.locator(".benchmark__table");
     await expect(table).toBeVisible({ timeout: FIRST_PAINT_TIMEOUT });
-    // fixture 3 プロジェクトぶんの行
-    await expect(page.locator(".benchmark__row")).toHaveCount(3);
+    // fixture のプロジェクト行: proj-a / b / c ＋ trend-proj ＝ 4 行
+    // （採点済み 1 件以上のプロジェクトが 1 行ずつ）。
+    await expect(page.locator(".benchmark__row")).toHaveCount(4);
 
     // --- cinch-020 の直接的な回帰検知 ---
     // styles.css の .cat-spark__foot-sub ブロックが壊れると、CSS パーサーが
