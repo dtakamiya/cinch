@@ -1,23 +1,7 @@
 import { CATEGORIES, type Category } from "../shared/types.js";
-import type { SessionSummary } from "../shared/types.js";
+import type { SessionSummary, TrendWindowOption } from "../shared/types.js";
 
-/**
- * 窓分割オプション。
- *
- * cinch-023 が `shared/types.ts` に置く予定の `TrendWindowOption` と **構造的に同型**の
- * ローカル定義。cinch-018 のスコープでは `shared/types.ts` を変更しないため、ここに
- * ローカルで持つ。cinch-023 の PR で
- * `import type { TrendWindowOption } from "../shared/types.js"` に一本化される前提で、
- * その差分がゼロになるよう **名前・構造を正準定義に合わせている**。
- *
- * - `bucketKind`: 窓の切り方。`"week"`（既定）or `"session-window"`。
- * - `windowSize`: `session-window` のときの N（末尾 N 件 / その手前 N 件）。
- *   `session-window` のときのみ有効・デフォルト 5・`"week"` のときは無視する。
- */
-export interface TrendWindowOption {
-  bucketKind: "week" | "session-window";
-  windowSize?: 3 | 5 | 10;
-}
+export type { TrendWindowOption } from "../shared/types.js";
 
 /** 1 カテゴリ・1 バケット分の集計点。 */
 export interface CategoryTrendPoint {

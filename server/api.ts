@@ -1,8 +1,45 @@
 import express from "express";
-import type { SessionsResponse, SessionDetailResponse } from "../shared/types.js";
+import type {
+  SessionsResponse,
+  SessionDetailResponse,
+  RuleTrendsResponse,
+  TrendWindowOption,
+} from "../shared/types.js";
 import { analyzeAll, toSummary } from "./analyze.js";
+import { buildRuleTrends, type RuleTrendSessionInput } from "./aggregate.js";
+import type { AnalyzedSession } from "./cache.js";
 import { AnalysisCache } from "./cache.js";
 import { defaultRoot } from "./discover.js";
+
+const WINDOW_SIZES = [3, 5, 10] as const;
+
+/** query の bucket / windowSize を検証して TrendWindowOption に正規化する。不正値は既定にフォールバックする。 */
+function parseTrendWindowOption(query: express.Request["query"]): TrendWindowOption {
+  const bucketKind = query.bucket === "session-window" ? "session-window" : "week";
+  if (bucketKind === "week") return { bucketKind: "week" };
+
+  const raw = Number(query.windowSize);
+  const windowSize = (WINDOW_SIZES as readonly number[]).includes(raw)
+    ? (raw as 3 | 5 | 10)
+    : 5;
+  return { bucketKind: "session-window", windowSize };
+}
+
+/** buildRuleTrends に渡す入力（evidence / advice を含めない）に変換する。 */
+function toRuleTrendInput(a: AnalyzedSession): RuleTrendSessionInput {
+  return {
+    sessionId: a.metrics.sessionId,
+    projectName: a.metrics.projectName,
+    startedAt: a.metrics.startedAt,
+    gradable: a.score.gradable,
+    rules: a.score.rules.map((r) => ({
+      id: r.id,
+      category: r.category,
+      earned: r.earned,
+      max: r.max,
+    })),
+  };
+}
 
 export interface AppOptions {
   root?: string;
@@ -60,6 +97,20 @@ export function createApp(options: AppOptions = {}): express.Express {
       metrics: found.metrics,
       score: found.score,
     };
+    res.json(body);
+  });
+
+  // ルール別スコア推移（cinch-023）。projectName 絞りは、共有 AnalysisCache を渡して
+  // analyzeAll(root, cache) を呼び直し、返った結果配列を解析済みメタ情報の
+  // projectName で突き合わせて絞る方式にする（discover 段階では絞らない）。
+  app.get("/api/projects/:projectName/rule-trends", async (req, res) => {
+    const { projectName } = req.params;
+    const opts = parseTrendWindowOption(req.query);
+
+    const result = await analyzeAll(root, cache);
+    const input = result.sessions.map(toRuleTrendInput);
+
+    const body: RuleTrendsResponse = buildRuleTrends(input, projectName, opts);
     res.json(body);
   });
 

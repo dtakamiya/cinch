@@ -4,10 +4,12 @@
  * - `#/benchmark` … プロジェクト横断ベンチマーク
  * - それ以外（`#/` など） … セッション一覧。`?project=<name>` でプロジェクト絞り込みを
  *   URL に載せられる（cinch-016 AC10: 絞り込み state を hash に同期する）。
+ *   `&rule=<id>` でルール別スコア推移からの「該当ルール最大失点セッション一覧」への
+ *   絞り込みを URL に載せられる（cinch-023）。
  * 純粋関数として切り出し、UI を介さずテストできるようにする。
  */
 export type Route =
-  | { name: "list"; project?: string }
+  | { name: "list"; project?: string; rule?: string }
   | { name: "detail"; sessionId: string }
   | { name: "benchmark" };
 
@@ -30,7 +32,12 @@ export function parseRoute(hash: string): Route {
   }
 
   const project = readQueryParam(queryPart, "project");
-  return project === "" ? { name: "list" } : { name: "list", project };
+  const rule = readQueryParam(queryPart, "rule");
+  if (project === "" && rule === "") return { name: "list" };
+  const route: Route = { name: "list" };
+  if (project !== "") route.project = project;
+  if (rule !== "") route.rule = rule;
+  return route;
 }
 
 /** Route から hash 文字列（先頭 `#` 付き）を組み立てる。 */
@@ -41,10 +48,14 @@ export function routeToHash(route: Route): string {
   if (route.name === "benchmark") {
     return "#/benchmark";
   }
+  const params: string[] = [];
   if (route.project !== undefined && route.project !== "") {
-    return `#/?project=${encodeURIComponent(route.project)}`;
+    params.push(`project=${encodeURIComponent(route.project)}`);
   }
-  return "#/";
+  if (route.rule !== undefined && route.rule !== "") {
+    params.push(`rule=${encodeURIComponent(route.rule)}`);
+  }
+  return params.length === 0 ? "#/" : `#/?${params.join("&")}`;
 }
 
 /** `key=value&...` 形式の断片から key の値を取り出す。無ければ空文字。 */

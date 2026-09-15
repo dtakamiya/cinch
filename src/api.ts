@@ -1,6 +1,8 @@
 import type {
+  RuleTrendsResponse,
   SessionDetailResponse,
   SessionsResponse,
+  TrendWindowOption,
 } from "../shared/types.js";
 
 async function getJson<T>(url: string): Promise<T> {
@@ -29,5 +31,18 @@ export function fetchSessionDetail(
 ): Promise<SessionDetailResponse> {
   return getJson<SessionDetailResponse>(
     `/api/sessions/${encodeURIComponent(sessionId)}`,
+  );
+}
+
+export function fetchRuleTrends(
+  projectName: string,
+  opts: TrendWindowOption = { bucketKind: "week" },
+): Promise<RuleTrendsResponse> {
+  const params = new URLSearchParams({ bucket: opts.bucketKind });
+  if (opts.bucketKind === "session-window" && opts.windowSize !== undefined) {
+    params.set("windowSize", String(opts.windowSize));
+  }
+  return getJson<RuleTrendsResponse>(
+    `/api/projects/${encodeURIComponent(projectName)}/rule-trends?${params.toString()}`,
   );
 }

@@ -201,7 +201,11 @@ export function App() {
         list !== null && <BenchmarkView data={list} />
       ) : (
         list !== null && (
-          <SessionList data={list} initialProject={route.project ?? ""} />
+          <SessionList
+            data={list}
+            initialProject={route.project ?? ""}
+            initialRule={route.rule ?? ""}
+          />
         )
       )}
     </div>

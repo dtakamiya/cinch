@@ -158,3 +158,68 @@ export interface SessionDetailResponse {
   metrics: SessionMetrics;
   score: SessionScore;
 }
+
+// ---- ルール別スコア推移（cinch-023） ----
+
+/**
+ * 推移の窓分割オプション。
+ * - `bucketKind`: 窓の切り方。`"week"`（既定・ISO 8601 週）or `"session-window"`。
+ * - `windowSize`: `session-window` のときの N（末尾 N 件 / その手前 N 件）。
+ *   `session-window` のときのみ有効・デフォルト 5・`"week"` のときは無視する。
+ *
+ * cinch-018（src/categoryTrend.ts）のローカル同型定義をここに一本化したもの。
+ */
+export interface TrendWindowOption {
+  bucketKind: "week" | "session-window";
+  windowSize?: 3 | 5 | 10;
+}
+
+/** 1 ルール・1 バケット分の集計点。 */
+export interface RuleTrendPoint {
+  /**
+   * 週バケット: ISO 8601 週キー（例 "2026-W05"）。
+   * セッション窓バケット: `"previous"` | `"current"`。
+   * いずれも X 軸／React のキーに使う一意な文字列。
+   */
+  bucketKey: string;
+  /** そのバケットでこのルールが獲得した earned の合計 */
+  earned: number;
+  /** そのバケットのこのルールの max の合計 */
+  max: number;
+  /** earned / max。max が 0（該当ルールのデータが無い）のときは null */
+  rate: number | null;
+  /** そのバケットに集計対象になった採点済みセッション数 */
+  sessions: number;
+}
+
+/** 1 ルール分の推移系列。 */
+export interface RuleTrendBucket {
+  /** ルール id（server/rules/*.ts の Rule.id と一致） */
+  id: string;
+  category: Category;
+  points: RuleTrendPoint[];
+  /**
+   * 最新バケットの rate − 直前バケットの rate。
+   * どちらかの rate が null、またはバケットが 2 つ未満なら null。
+   */
+  delta: number | null;
+}
+
+export interface RuleTrendsResponse {
+  projectName: string;
+  bucketKind: "week" | "session-window";
+  /** `session-window` のときの N。`"week"` のときは null。 */
+  windowSize: number | null;
+  /**
+   * 推移を出すのに十分なデータがあるか。
+   * 直近バケットが空、または比較対象バケットが空（採点済みセッションが無い）なら false。
+   */
+  hasEnoughData: boolean;
+  /**
+   * delta の昇順（悪化が大きい順）でソート済み。delta が null のルールは末尾に寄せる。
+   * hasEnoughData が false のときは空配列。
+   */
+  rules: RuleTrendBucket[];
+  /** hasEnoughData が false のときの説明文 */
+  message?: string;
+}
