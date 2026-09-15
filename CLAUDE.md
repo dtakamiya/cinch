@@ -105,3 +105,4 @@ discover.ts → parse.ts → metrics.ts → rules/*.ts → score.ts → api.ts
 
 設計の詳細は `docs/superpowers/specs/2026-08-25-cinch-design.md`、実装計画は
 `docs/superpowers/plans/2026-08-25-cinch.md`。閾値の初期値は実データを見て調整する前提。
+cinch 自身の開発セッションを cinch で採点する運用（ドッグフーディング）は `docs/dogfooding.md` 参照。
