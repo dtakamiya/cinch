@@ -60,6 +60,52 @@ async function writeSession(name: string, content: string): Promise<void> {
   await writeFile(join(proj, `${name}.jsonl`), content);
 }
 
+function sessionLinesAt(cwd: string, turns: number, startedAt: Date): string {
+  const lines: string[] = [
+    JSON.stringify({
+      type: "system",
+      subtype: "init",
+      timestamp: new Date(startedAt.getTime() - 1000).toISOString(),
+      cwd,
+      version: "2.1.243",
+      gitBranch: "main",
+    }),
+  ];
+  for (let i = 0; i < turns; i++) {
+    lines.push(
+      JSON.stringify({
+        type: "assistant",
+        timestamp: new Date(startedAt.getTime() + i * 60_000).toISOString(),
+        cwd,
+        version: "2.1.243",
+        gitBranch: "main",
+        isSidechain: false,
+        message: {
+          model: "claude-sonnet-5",
+          usage: {
+            input_tokens: 10,
+            output_tokens: 500,
+            cache_creation_input_tokens: 0,
+            cache_read_input_tokens: 5000,
+          },
+          content: [
+            { type: "tool_use", id: `tu_${i}`, name: "Read", input: { file_path: `/f${i}.ts` } },
+          ],
+        },
+      }),
+      JSON.stringify({
+        type: "user",
+        timestamp: new Date(startedAt.getTime() + i * 60_000 + 30_000).toISOString(),
+        cwd,
+        message: {
+          content: [{ type: "tool_result", tool_use_id: `tu_${i}`, content: "ok" }],
+        },
+      }),
+    );
+  }
+  return lines.join("\n") + "\n";
+}
+
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "cinch-api-"));
   projectCwd = await mkdtemp(join(tmpdir(), "cinch-api-cwd-"));
@@ -224,5 +270,92 @@ describe("GET /api/sessions/:sessionId", () => {
 
     const res = await request(createApp({ root })).get("/api/sessions/s1");
     expect(JSON.stringify(res.body)).not.toContain(secret);
+  });
+});
+
+describe("GET /api/projects/:projectName/rule-trends", () => {
+  it("採点済みセッションが無ければ hasEnoughData:false とメッセージを返す", async () => {
+    const res = await request(createApp({ root })).get(
+      "/api/projects/nope/rule-trends",
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.hasEnoughData).toBe(false);
+    expect(typeof res.body.message).toBe("string");
+    expect(res.body.rules).toEqual([]);
+  });
+
+  it("週バケットで2週分あれば hasEnoughData:true で rules[] を返す（delta昇順・null末尾）", async () => {
+    await writeSession(
+      "week1",
+      sessionLinesAt(projectCwd, 5, new Date(Date.UTC(2026, 0, 5, 10, 0, 0))),
+    );
+    await writeSession(
+      "week2",
+      sessionLinesAt(projectCwd, 5, new Date(Date.UTC(2026, 0, 12, 10, 0, 0))),
+    );
+    const projectName = projectCwd.split("/").pop();
+
+    const res = await request(createApp({ root })).get(
+      `/api/projects/${projectName}/rule-trends?bucket=week`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.hasEnoughData).toBe(true);
+    expect(res.body.bucketKind).toBe("week");
+    expect(res.body.windowSize).toBeNull();
+    expect(res.body.rules.length).toBe(15);
+
+    const deltas = res.body.rules.map((r: { delta: number | null }) => r.delta);
+    const numeric = deltas.filter((d: number | null): d is number => d !== null);
+    for (let i = 1; i < numeric.length; i++) {
+      expect(numeric[i]).toBeGreaterThanOrEqual(numeric[i - 1]!);
+    }
+    const nullCount = deltas.filter((d: number | null) => d === null).length;
+    if (nullCount > 0) {
+      expect(deltas.slice(deltas.length - nullCount)).toEqual(
+        Array(nullCount).fill(null),
+      );
+    }
+  });
+
+  it("応答に evidence / advice を含めない", async () => {
+    await writeSession(
+      "week1",
+      sessionLinesAt(projectCwd, 5, new Date(Date.UTC(2026, 0, 5, 10, 0, 0))),
+    );
+    await writeSession(
+      "week2",
+      sessionLinesAt(projectCwd, 5, new Date(Date.UTC(2026, 0, 12, 10, 0, 0))),
+    );
+    const projectName = projectCwd.split("/").pop();
+
+    const res = await request(createApp({ root })).get(
+      `/api/projects/${projectName}/rule-trends`,
+    );
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain("advice");
+    expect(body).not.toContain("evidence");
+  });
+
+  it("session-window バケットでデータが足りなければ hasEnoughData:false", async () => {
+    await writeSession(
+      "s1",
+      sessionLinesAt(projectCwd, 5, new Date(Date.UTC(2026, 0, 5, 10, 0, 0))),
+    );
+    const projectName = projectCwd.split("/").pop();
+
+    const res = await request(createApp({ root })).get(
+      `/api/projects/${projectName}/rule-trends?bucket=session-window&windowSize=5`,
+    );
+    expect(res.body.hasEnoughData).toBe(false);
+    expect(res.body.bucketKind).toBe("session-window");
+    expect(res.body.windowSize).toBe(5);
+  });
+
+  it("不正な windowSize は既定の5にフォールバックする", async () => {
+    const res = await request(createApp({ root })).get(
+      "/api/projects/nope/rule-trends?bucket=session-window&windowSize=999",
+    );
+    expect(res.body.windowSize).toBe(5);
   });
 });

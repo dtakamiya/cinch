@@ -92,6 +92,35 @@ describe("parseRoute", () => {
       project: "%E0%A4%A",
     });
   });
+
+  it("#/?project=<name>&rule=<id> は project と rule 付きの一覧", () => {
+    expect(parseRoute("#/?project=cinch&rule=cache-efficiency")).toEqual({
+      name: "list",
+      project: "cinch",
+      rule: "cache-efficiency",
+    });
+  });
+
+  it("rule のみ（project 無し）も拾う", () => {
+    expect(parseRoute("#/?rule=cache-efficiency")).toEqual({
+      name: "list",
+      rule: "cache-efficiency",
+    });
+  });
+
+  it("rule= が空なら rule キー無し", () => {
+    expect(parseRoute("#/?project=cinch&rule=")).toEqual({
+      name: "list",
+      project: "cinch",
+    });
+  });
+
+  it("rule の値は decodeURIComponent する", () => {
+    expect(parseRoute("#/?rule=a%2Fb%20c")).toEqual({
+      name: "list",
+      rule: "a/b c",
+    });
+  });
 });
 
 describe("routeToHash", () => {
@@ -119,8 +148,33 @@ describe("routeToHash", () => {
     expect(routeToHash({ name: "benchmark" })).toBe("#/benchmark");
   });
 
+  it("project と rule 付き一覧は #/?project=<...>&rule=<...>", () => {
+    expect(
+      routeToHash({ name: "list", project: "cinch", rule: "cache-efficiency" }),
+    ).toBe("#/?project=cinch&rule=cache-efficiency");
+  });
+
+  it("rule のみ（project 無し）は #/?rule=<...>", () => {
+    expect(routeToHash({ name: "list", rule: "cache-efficiency" })).toBe(
+      "#/?rule=cache-efficiency",
+    );
+  });
+
+  it("rule 未指定・空文字は含めない", () => {
+    expect(routeToHash({ name: "list", project: "cinch", rule: "" })).toBe(
+      "#/?project=cinch",
+    );
+  });
+
   it("parseRoute と routeToHash は往復する", () => {
-    for (const hash of ["#/", "#/benchmark", "#/?project=cinch", "#/session/s1"]) {
+    for (const hash of [
+      "#/",
+      "#/benchmark",
+      "#/?project=cinch",
+      "#/?project=cinch&rule=cache-efficiency",
+      "#/?rule=cache-efficiency",
+      "#/session/s1",
+    ]) {
       expect(routeToHash(parseRoute(hash))).toBe(hash);
     }
   });

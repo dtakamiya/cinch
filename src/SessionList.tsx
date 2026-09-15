@@ -3,7 +3,9 @@ import type { SessionSummary, SessionsResponse } from "../shared/types.js";
 import { ScoreRing } from "./ScoreRing.js";
 import { ScoreTrend } from "./ScoreTrend.js";
 import { CategoryScoreTrends } from "./CategoryScoreTrends.js";
+import { RuleScoreTrends } from "./RuleScoreTrends.js";
 import { routeToHash } from "./route.js";
+import { RULE_LABELS } from "./format.js";
 import {
   IconActivity,
   IconArrowRight,
@@ -76,10 +78,17 @@ export function summarize(rows: SessionSummary[]): {
 export function SessionList({
   data,
   initialProject = "",
+  initialRule = "",
 }: {
   data: SessionsResponse;
   /** URL(hash) から復元したプロジェクト絞り込み（cinch-016 AC10）。 */
   initialProject?: string;
+  /**
+   * URL(hash) から復元した、ルール別スコア推移からの絞り込み（cinch-023）。
+   * 設定されていると、プロジェクト内でそのルールが「主な減点」になっているセッションだけを
+   * 減点の大きい順に表示する。
+   */
+  initialRule?: string;
 }) {
   const [filters, setFilters] = useState<Filters>({
     project: initialProject,
@@ -87,26 +96,37 @@ export function SessionList({
     sortBy: "date",
     showUngraded: false,
   });
+  const [ruleFilter, setRuleFilter] = useState(initialRule);
 
-  // プロジェクト絞り込みを URL(hash) に同期する（AC10）。
+  // プロジェクト・ルール絞り込みを URL(hash) に同期する（AC10 / cinch-023）。
   // 初回は初期値と一致するので書き込まない。以後、変更があったときだけ hash を書き換える。
-  const lastSyncedProject = useRef(initialProject);
+  const lastSynced = useRef({ project: initialProject, rule: initialRule });
   useEffect(() => {
-    if (filters.project === lastSyncedProject.current) return;
-    lastSyncedProject.current = filters.project;
-    const nextHash = routeToHash({ name: "list", project: filters.project });
+    if (
+      filters.project === lastSynced.current.project &&
+      ruleFilter === lastSynced.current.rule
+    ) {
+      return;
+    }
+    lastSynced.current = { project: filters.project, rule: ruleFilter };
+    const nextHash = routeToHash({
+      name: "list",
+      project: filters.project,
+      rule: ruleFilter === "" ? undefined : ruleFilter,
+    });
     if (window.location.hash !== nextHash) {
       window.location.hash = nextHash;
     }
-  }, [filters.project]);
+  }, [filters.project, ruleFilter]);
 
-  // 外側（戻る/進む・ベンチマークからの遷移）で initialProject が変わったら追従する。
+  // 外側（戻る/進む・ベンチマークからの遷移）で initialProject / initialRule が変わったら追従する。
   useEffect(() => {
-    lastSyncedProject.current = initialProject;
+    lastSynced.current = { project: initialProject, rule: initialRule };
     setFilters((f) =>
       f.project === initialProject ? f : { ...f, project: initialProject },
     );
-  }, [initialProject]);
+    setRuleFilter((r) => (r === initialRule ? r : initialRule));
+  }, [initialProject, initialRule]);
 
   const projects = useMemo(
     () =>
@@ -130,6 +150,19 @@ export function SessionList({
         : data.sessions.filter((s) => s.projectName === filters.project),
     [data.sessions, filters.project],
   );
+
+  // ルール別スコア推移の行クリックから来た絞り込み。対象ルールが「主な減点」になっている
+  // セッションだけを、そのルールでの失点が大きい順に表示する（cinch-023）。
+  const ruleFilteredSessions = useMemo(() => {
+    if (ruleFilter === "") return null;
+    const base =
+      filters.project === ""
+        ? data.sessions
+        : data.sessions.filter((s) => s.projectName === filters.project);
+    return base
+      .filter((s) => s.gradable && s.topDeduction?.id === ruleFilter)
+      .sort((a, b) => (b.topDeduction?.lost ?? 0) - (a.topDeduction?.lost ?? 0));
+  }, [data.sessions, filters.project, ruleFilter]);
 
   const { avg, graded, total } = summarize(rows);
 
@@ -157,7 +190,10 @@ export function SessionList({
           プロジェクト
           <select
             value={filters.project}
-            onChange={(e) => setFilters({ ...filters, project: e.target.value })}
+            onChange={(e) => {
+              setFilters({ ...filters, project: e.target.value });
+              setRuleFilter("");
+            }}
           >
             <option value="">すべて</option>
             {projects.map((p) => (
@@ -224,11 +260,31 @@ export function SessionList({
             sessions={trendSessions}
             projectName={filters.project}
           />
+          <RuleScoreTrends
+            projectName={filters.project}
+            onSelectRule={(ruleId) => setRuleFilter(ruleId)}
+          />
         </>
       )}
 
+      {ruleFilteredSessions !== null && (
+        <div className="rule-filter-banner">
+          <span>
+            {RULE_LABELS[ruleFilter] ?? ruleFilter} の減点が大きいセッション（
+            {ruleFilteredSessions.length} 件）
+          </span>
+          <button
+            type="button"
+            className="link"
+            onClick={() => setRuleFilter("")}
+          >
+            絞り込みを解除
+          </button>
+        </div>
+      )}
+
       <div className="session-list">
-        {rows.map((s) =>
+        {(ruleFilteredSessions ?? rows).map((s) =>
           s.gradable ? (
             <a
               key={s.sessionId}
